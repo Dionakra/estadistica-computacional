@@ -1,0 +1,93 @@
+---
+title: "Simulacro Examen 2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Examen 1
+a) Leer el fichero de trabajo y describir su estructura (número de variables y tipo)
+```{r}
+datos = read.table("../datos/datos_salarios.txt", sep=" ", header=T)
+str(datos) # Variables y tipos
+names(datos) # Nombres de las variables
+```
+
+b) Representar la variable salario mediante un diagrama de cajas
+```{r}
+salarios = datos['salario'] # datos$salario o attach(datos) y luego salario
+boxplot(salarios,col="green",main="Gráfico de Caja de los Salarios", horizontal = T)
+```
+
+c) representar un diagrama de caja de la variable salario clasificado por tipo de trabajo (Sector industrial y sector servicios), qué sector tiene salario medio mayor
+```{r}
+tabla = table(datos$tipo.trabajo) #Cuento de cada tipo
+# Comparacion de campo Salario en base al campo trabajo.
+boxplot(datos$salario ~ datos$tipo.trabajo,col="green",main="Gráfico de Caja de los Salarios", horizontal = T)
+```
+
+d) Media y varianza de la variable salario
+```{r}
+salario = datos$salario
+n = length(salario)
+media = mean(salario)
+varianza= var(salario)*((n-1)/n)  #varianza
+```
+
+
+e) Tabla de frecuencias de la variable razas, cuantos de asiaticos
+```{r}
+raza = datos$raza
+absoluta = table(raza)
+relativa = absoluta/length(raza)
+tabla=cbind(relativa, absoluta)
+tabla
+```
+
+f) Representar gráficamente la variable raza utilizando dos tipos de gráfico distintos
+```{r}
+raza = datos$raza
+absoluta = table(raza)
+# Gráfico de barras
+barplot(absoluta,horiz=TRUE,col=c("yellow","white","black", "green"))
+
+#grafico de sectores
+pie(absoluta,col=c("yellow","white","black", "green"))
+```
+
+h) Usando las variables "estado.civil" y "tipo.trabajo", construir la tabla de doble entrada (frecuencias absolutas conjuntas) y las distribuciones marginales ¿Cuántas personas solteras trabajan en el sector Servicios?
+```{r}
+estado = datos$estado.civil
+trabajo = datos$tipo.trabajo
+tmp = table(estado, trabajo)
+tmp
+margin.table(tmp, margin=1) #Marginal la X, que es el estado
+margin.table(tmp, margin=2) #Marginal la Y, que es el trabajo
+prop.table(tmp)*100
+
+```
+
+i) Seleccionar aquellos empleados que cobran más de 100 unidades. Indicar el número de trabajadores que cumplen esta función
+```{r}
+df1 = subset(datos, salario>100 & estado.civil == "casado") # Cuantos empleados cobran más de 100 y están casados
+dim(df1)
+
+```
+
+j) Seleccionar los datos correspondientes a las variables salario, edad, tipo de trabajo para los individuos que "sí" tienen seguro médico y además son "solteros". Calcular la media de los salarios para estos individuosSeleccionar aquellos empleados que cobran más de 100 unidades. Indicar el número de trabajadores que cumplen esta función
+```{r}
+df2 = subset(datos, seguro.medico == "si" & estado.civil == "soltero", c(salario, edad, tipo.trabajo))
+dim(df2)
+mean(df2$salario)
+```
+
+
+k) Para estudiar la relación estadística entre salario y edad de un empleado calcular la covarianza, interpretar la covarianza y calcular la recta de regresión que permita estimar la variable salario en función de la edad. Indicar como es la relación entre las dos variables
+```{r}
+attach(datos)
+cov(edad, salario) # Valor positivo, a medida que una variable aumenta, la otra también. Relación directa.
+regre=lm(salario~edad) # recta = salario = 87.705 + 0.707 * edad
+cor(edad, salario) # De Pearson también, entre -1 y 1, pasando por el 0, si es muy cercano al -1 o 1 es que hay mucha relación entre las variables. Si está cercano al 0 es que no hay relación entre ellas, de hecho si es 0 no hay relación, son independientes, en este caso al no haber correlación entre variables, la estimación con la recta de regresión no vale para mucho. El coeficiente de determinación (cor^2), siempre entre 0 y 1
+```

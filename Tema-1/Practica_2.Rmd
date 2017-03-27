@@ -1,0 +1,159 @@
+---
+title: "Práctica 2"
+output: html_document
+---
+#ESTADÍSTICA COMPUTACIONAL
+
+##Juan M. Muñoz Pichardo - María Dolores Cubiles de la Vega
+
+##Departamento de Estadística e I.O. Universidad de Sevilla
+ 
+###TEMA 1. INTRODUCCION AL R. ESTADISTICA DESCRIPTIVA (2)
+      
+
+Tabla de frecuencia completa
+```{r}
+
+x=c(4,3,7,5,6,4,5,4,5,6,7,7,3,4,5)
+# Para meter datos por pantalla, scan
+absoluta=table(x)
+relativa=absoluta/length(x)
+absacum=cumsum(absoluta)
+relacum=cumsum(relativa)
+tabla=cbind(absoluta,absacum,relativa,relacum)
+tabla
+```
+
+Resumenes gráficos
+
+```{r}
+
+y = c(rep(0,20),rep(1,47),rep(2,23),rep(3,10))
+length(y) 
+
+absoluta=table(y)
+absacum=cumsum(absoluta)
+tabla=cbind(absoluta,absacum) # Escribe las variables por columnas
+colnames(tabla)[1]= "n"    
+colnames(tabla)[2]= "N"    
+tabla
+```
+
+Diagrama de barras
+```{r}
+plot(absoluta,type="h",xlab="nºhermanos",ylab="frec.absoluta",lwd=2) 
+```
+
+
+Poligono de frecuencias(cambiamos type=l)
+```{r}
+plot(absoluta,type="l",xlab="nºhermanos",ylab="frec.absoluta",lwd=2) 
+```
+
+
+Combinar los dos graficos y añadimos título
+
+```{r}
+plot(absoluta,type="h",xlab="nºhermanos",ylab="frec.absoluta",lwd=2,lty=3, 
+     main="Diagrama Barra/Pol.Frecuencias") 
+lines(absoluta,type="l",lwd=2) 
+```
+
+Curva acumulativa (cambiamos la frecuencia por acumulada y type=s)
+```{r}
+plot(absacum,type="s",xlab="nºhermanos",ylab="frec.absoluta acumulada ",lwd=2,main="Curva Acumulativa")
+```
+
+Diagrama de caja y bigotes
+Se hace con los outsiders y las cajas de cuartiles
+Se usa para ver valores atípicos
+Sesgado a bigote, si hay mucho bigote derecho y poco izquierdo, sesgado a la derecha, y viceversa
+```{r}
+boxplot(y,col="blue",main="Gráfico de Caja")
+```
+
+Ejemplo de Variable cualitativa
+```{r}
+colorpelo = c(rep("Moreno",5),rep("Rubio",3),rep("Otros",4))
+
+#tabla de frecuencias
+absoluta=table(colorpelo)
+relativa=absoluta/length(colorpelo)
+tabla=cbind(absoluta,relativa,relativa*360)
+colnames(tabla)[3]= "grados"
+
+#diagrama de barras (Con la tabla, NO con la variable)
+barplot(absoluta)   #Barras verticales
+barplot(absoluta,horiz=TRUE,col=c("blue","red","green"))
+
+#grafico de sectores
+pie(absoluta,col=c("blue","red","green"))
+
+```
+
+Ejemplo de Medidas localización, dispersión
+
+```{r}
+# Medidas de localización central
+x = c(rep(0,4),rep(1,20),rep(2,45),rep(3,25),rep(4,5),rep(5,1))
+n=length(x)
+#Medidas localización, dispersión
+absoluta=table(x)
+mean(x)        #media aritmética
+median(x)  		#mediana
+names(which.max(absoluta))  #moda (caracter)
+as.numeric(names(which.max(absoluta))) #moda
+
+
+# Medidas de dispersión
+var(x)            #(cuasi)varianza
+varianza=var(x)*((n-1)/n)  #varianza
+sd(x)      	  #(cuasi)desviación típica
+destip=sqrt(varianza) #desviación típica
+quantile(x,.25)   #primer cuantil
+quantile(x,.5)    #segundo cuantil
+quantile(x,.75)   #tercer cuantil
+quantile(x,.2)    #percentil 20
+quantile(x,.8)    #percentil 80
+
+summary(x)
+```
+
+Ejemplo 4 Tabla de doble entrada
+
+```{r}
+x = c (3,2,4,2,1,2,5,2,3,2)
+y = c (2,5,4,3,3,4,4,3,2,3)
+tmp=table(x,y) #tabla de frecuencias absolutas conjuntas
+tmp
+
+prop.table(tmp) #tabla de frecuencias relativas conjuntas
+
+options(digits=3)
+
+prop.table(tmp,1)*100 #Distribución condicionada (Y/X=Xk)
+
+prop.table(tmp,2)*100 #Distribución condicionada (X/y=yj)
+
+# Gráfico para representar dos variables
+plot(x, y)
+
+```
+
+
+
+Ejemplo: Creación de un data-frame y guardamos el área de trabajo.
+```{r}
+pesocuer<-c(10,207,62,6.8,52.2)
+pesocere<-c(115,406,1320,179,440)
+primates<-data.frame("Peso del cuerpo(Kgs) "=pesocuer, "Peso del cerebro(Kgs) "=pesocere)
+row.names(primates)<-c("Mono Potar", "Gorila", "Humano", "Mono Rhesus", "Chimpancé")
+plot(primates, xlim=c(5,250),ylim=c(0,1400),
+     xlab=names(primates)[1],  ylab=names(primates)[2],  main="Datos de primates")
+text(x=pesocuer,y=pesocere,labels=row.names(primates), adj=0, col="red", pch=20)
+save(primates,file="primates.RData")   #Guardar el data frame en un espacio de trabajo
+rgysobrex=lm(pesocere~pesocuer) # recta de regresión y = a + bx, donde a es Intercept, y
+rgxsobrey = lm(pesocuer~pesocere) # x = Intercept + valPesoCere * pesoCere
+load(file="primates.RData")            #Se puedes recuperar en cualquier sesión posterior
+
+```

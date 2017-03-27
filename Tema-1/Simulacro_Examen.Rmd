@@ -1,0 +1,77 @@
+---
+title: "Simulacro Examen"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Examen 1
+a) Leer el fichero de titanic
+```{r}
+datos = read.table("../datos/titanic.dat", sep=" ", header=T)
+str(datos) # Variables y tipos
+names(datos) # Nombres de las variables
+```
+
+b) Obtener la tabla de frecuencias (de doble entrada) pra las variables Age y Survived. Calcular las marginales para ambas variables. ¿Cuantos adultos hay supervivientes? ¿Cuantos niños hay en total?
+```{r}
+age = datos$Age
+survived = datos$Survived
+
+tmp = table(age, survived)
+tmp
+prop.table(tmp)*100
+
+margin.table(tmp, margin=1)
+margin.table(tmp, margin=2)
+
+dim(subset(datos, Age == "Male" & Survived == "Yes"))
+dim(subset(datos, Age="Child"))
+```
+
+c) Cargar el fichero Mexico.txt, representar mediante diagramas de cajas la variable OZONO para cada día de la semana. ¿Hay algún valor atípico de nivel de ozono los domingos? ¿Y el martes?
+```{r}
+mex = read.table("../datos/mexico.txt", sep=" ", header=T)
+attach(mex)
+boxplot(mex$OZONO ~ mex$DIASEMAN,col="green",main="Gráfico de Caja del Ozono", horizontal =T)
+```
+
+d) Cuartiles correspondientes
+```{r}
+quantile(OZONO, 0.25)
+quantile(OZONO, 0.50)
+quantile(OZONO, 0.75)
+```
+
+
+e) Seleccionar las variables OZONO, SO2 y NO2 para los Lunes, calcular la mediana y el valor de mayor frecuencia (moda) para la variable del nivel de ozono del subconjunto seleccionado. Calcular una medida de dispersión en la variable nivel de SO2 para el subconjunto seleccionado
+```{r}
+sub = subset(mex, DIASEMAN == "Lun", c(OZONO, SO2, NO2))
+dim(sub)
+x = sub$OZONO
+absoluta = table(x)
+median(x)
+as.numeric(names(which.max(absoluta)))
+
+y = sub$SO2
+n = length(y)
+var(y)            #(cuasi)varianza
+varianza=var(y)*((n-1)/n)  #varianza
+sd(y)      	  #(cuasi)desviación típica
+destip=sqrt(varianza) #desviación típica
+destip
+
+
+
+y = sub$OZONO
+n = length(y)
+var(y)            #(cuasi)varianza
+varianza=var(y)*((n-1)/n)  #varianza
+sd(y)      	  #(cuasi)desviación típica
+destip=sqrt(varianza) #desviación típica
+destip
+
+# Mas dispersa la de OZONO, mayor valor de destip
+```

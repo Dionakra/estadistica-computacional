@@ -1,0 +1,124 @@
+---
+title: "Examen 1 20170222"
+author: "David de los Santos Boix"
+date: "22 de febrero de 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Apartado a)
+#### a.1 Obtener la tabla de frecuencias absolutas de la variable estado de salud
+```{r}
+datos = read.table("../datos/datos.csv", sep=" ", header=T)
+attach(datos)
+table(estado.salud)
+
+```
+#### a.2 ¿Cuántas personas hay con salud mala o regular?
+**133** personas
+```{r}
+mala_regular = subset(datos, estado.salud == "Mala" | estado.salud == "Regular")
+dim(mala_regular)[1]
+
+```
+
+#### a.3 ¿Cuál es el porcentaje de personas con salud "buena" o "muy buena"?
+**62.6%** tienen una salud buena o muy buena
+```{r}
+buena_muybuena = subset(datos, estado.salud == "Buena" | estado.salud == "Muy buena")
+(dim(buena_muybuena)[1]/dim(datos)[1])*100
+
+```
+
+### Apartado b)
+#### Realizar un diagrama de cajas para comparar el peso de hombres y mujeres. Interpretar el gráfico obtenido. ¿Existen hombres con sobrepeso? ¿Y con peso muy por debajo de lo normal?
+Al interpretar el diagrama de cajas podemos concluir que los intervalos de los pesos en las mujeres se mueven por unos valores sensiblemente menor al de los hombres, tanto en peso mínimo como en máximo, es decir, la distribución de pesos nos da una conclusión. Las mujeres pesan menos que los hombres.  
+
+Como podemos observar, existen individuos en valores outliers de los valores del peso para los hombres, tanto por la derecha (sobrepeso) como por la izquierda (peso por debajo de lo normal). Por lo que la respuesta es **sí**.
+
+```{r}
+boxplot(peso.kilos ~ sexo,col="green",main="Diagrama de cajas comparativa de peso entre hombres y mujeres", horizontal = T)
+```
+
+#### Comparar la dispersión del peso de hombres y mujeres. ¿Cuál está más disperso?
+Como podemos comprobar por la varianza, el peso del hombre es el que más dispersión presenta con un valor de 267.50 respecto al de la mujer, con un 254.89
+```{r}
+peso_hombre = subset(datos, sexo == "hombre")$peso.kilos
+n_hombre = length(peso_hombre)
+
+peso_mujer = subset(datos, sexo == "mujer")$peso.kilos
+n_mujer = length(peso_mujer)
+
+var(peso_hombre)*((n_hombre-1)/n_hombre)
+var(peso_mujer)*((n_mujer-1)/n_mujer)
+```
+
+
+
+### Apartado c)
+#### c.1 Calcular la media y la varianza de la edad de todas las personas.
+**Edad media:** 44.91 años  
+**Varianza:** 298.07
+```{r}
+mean(edad)
+
+n = length(edad)
+var(edad)*((n-1)/n)
+
+```
+
+#### c.2 Calcular el peso que no supera el 85% de las personas.
+91.6975 kilos
+```{r}
+quantile(peso.kilos, .85)
+```
+
+### Apartado d)
+#### d.1 Calcular la tabla de frecuencias conjunta de las variables: "estado.salud" e "hizo.ejercicio"
+```{r}
+(salud_ejercicio = table(estado.salud, hizo.ejercicio))
+
+(salud_ejercicio / dim(datos)[1])*100
+
+```
+
+#### d.2 Calcular la tabla de frecuencia marginal completa de la variable "hizo.ejercicio"
+```{r}
+margin.table(salud_ejercicio, margin=2)
+
+```
+
+#### d.3 De las personas que sí hacen ejercicio, ¿Qué porcentaje tienen estado de salud "bueno"?
+Un **26.36%** de las personas que hacen ejercicio tienen salud "buena"
+```{r}
+activas = subset(datos, hizo.ejercicio == "Si")
+activas_bueno = subset(activas, estado.salud == "Buena")
+
+(dim(activas_bueno)[1]/dim(activas)[1])*100
+
+```
+
+### Apartado e)
+#### e.1 ¿Cuál es el peso medio de los hombres que sí hacen ejercicio?
+**85.11** kilos de media para los hombres activos.
+```{r}
+activos_hombres = subset(activas, sexo=="hombre")
+mean(activos_hombres$peso.kilos)
+```
+
+#### e.2 ¿Y la edad mediana de las mujeres que miden más de 160cm?
+La edad mediana de las mujeres más altas que 160cm se sitúa en **40** años.
+```{r}
+e2 = subset(datos, sexo=="mujer" & altura.cm>160)
+median(e2$edad)
+```
+
+#### e.3 ¿Cuántos hombres quieren tener un peso deseado menor que 70 kilos?
+Un total de **68** hombres
+```{r}
+e3 = subset(datos, sexo=="hombre" & peso.deseado < 70.0)
+dim(e3)[1]
+```

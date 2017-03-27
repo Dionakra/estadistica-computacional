@@ -1,0 +1,123 @@
+---
+title: "Práctica 1"
+output:
+  html_document: default
+---
+
+#ESTADÍSTICA COMPUTACIONAL
+
+##Juan M. Muñoz Pichardo - María Dolores Cubiles de la Vega
+
+##Departamento de Estadística e I.O. Universidad de Sevilla
+ 
+###TEMA 1. INTRODUCCION AL R. (1)
+
+Muestra el código R y la salida (solo r)
+```{r}
+summary(cars)
+```
+
+Muestra la salida pero no el código R (r con echo=FALSE)
+```{r echo=FALSE}
+summary(cars)
+```
+
+Muestra el comando R pero no ejecuta la salida (r con eval=FALSE)
+```{r eval=FALSE}
+summary(cars)
+```
+
+
+
+## Ayuda de R
+
+```{r eval=FALSE}
+help(plot)
+?plot
+```
+
+## Paquetes en R
+
+```{r eval=FALSE}
+install.packages("XLConnect")##instalar
+require(XLConnect)##cargar 
+library(XLConnect)## cargar
+detach("package:XLConnect") ##lo descargamos
+remove.packages("XLConnect")## lo desinstalamos
+```
+
+
+## Generar datos
+
+```{r}
+a<- 5.69
+vector<-c(9,4,5.8,7)
+vectordecaracteres<-c("Lunes","Martes","Miercoles")
+vectorenteros<--2:6
+vectorsecuencia<-seq(5,10,0.5)
+
+```
+
+###Generar tablas
+
+```{r}
+set.seed(10)
+Colesterol<-sample(120:260,5,replace=TRUE)
+Glucemia<-sample(70:110,5,replace=TRUE)
+misdatos<-data.frame(Colesterol,Glucemia)##nos crea la tabla
+misdatos<-data.frame(Colesterol,Glucemia,row.names=c("A","B","C","D","E"))##etiquetar a los individuos
+```
+
+Podemos ver la tabla como en la consola
+
+```{r}
+misdatos
+```
+
+Creamos una tabla
+
+```{r}
+set.seed(5)
+Notas=sample(1:10,4,replace=TRUE)
+Sexo=sample(c("Hombre","Mujer"),4,replace=TRUE)
+misdatos<-data.frame(Notas,Sexo,row.names=c("Acosta","Berruezo","Campos","Dominguez"))
+misdatos
+```
+
+##Importar datos
+
+Desde una dirección web
+
+```{r}
+titanic<-read.table("http://knuth.uca.es/repos/ebrcmdr/bases_datos/titanic.dat")
+```
+
+Desde un archivo
+````{r}
+mexico<-read.table("../datos/mexico.txt",header=T)##En caso de que esté en el directorio de trabajo
+````
+
+Para archivos Excel con el paquete XLConnect
+```
+require(XLConnect)
+wb <- loadWorkbook("contaminacion_mexico.xls")##Nos carga el archivo
+contaminacion<- readWorksheet(wb, sheet="contaminacion_mexico")
+rm(wb)
+```
+
+Otra opción: abrir el archivo con open office, lo guardamos como txt o csv y después lo abrimos con read.table o read.csv, respectivamente.
+
+```
+read.csv("contaminacion_mexico_open.csv",header=T)
+```
+
+
+## Exportar datos
+
+Funciones `write.table` o `write.csv`
+
+Para utilizar archivos binarios de Rproject
+```{r}
+save(misdatos,file="Archivomisdatos.RData")
+load(file="Archivomisdatos.RData")
+```
