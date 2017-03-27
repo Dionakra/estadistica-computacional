@@ -1,0 +1,140 @@
+---
+title: "Examen 20170322"
+author: "David de los Santos Boix"
+date: "22 de marzo de 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Pulsaciones
+Pulse1: Pulsaciones antes de correr   
+Pulse2: Pulsaciones después de correr    
+Correr: Factor con dos valores (corrió y no corrió)   
+Fumar: Factor con dos niveles (fuma o no fuma)   
+Sexo: Hombre o mujer   
+Altura: En centímetros (cm)    
+Peso: En kilogramos (kg)   
+Actividad: Nulo, baja, media y alta   
+    
+
+#### A) Cargar los datos de pulsaciones, completando la semilla con los 4 últimos dígitos del DNI
+```{r}
+dni.cuatro = "6012"
+load("../datos/Pulso.rda")
+set.seed(dni.cuatro)
+datos = Pulsaciones[sample((1:92), 85), ]
+dim(datos)
+```
+    
+
+#### B) Calcular el intervalo de confianza para el peso medio de todos los individuos.
+```{r}
+shapiro.test(datos$Peso) # Al ser el p-value > alfa, aceptamos que es una distribución normal
+t = t.test(datos$Peso)
+(t$conf.int)
+```
+El peso medio para la población se encuentra entre los 63.65 y los 68.44 kg con una confianza del 95%
+    
+
+#### C) Calcular el intervalo de confianza para el peso medio de las mujeres
+```{r}
+peso.mujer = subset(datos, Sexo=="mujer")$Peso
+shapiro.test(peso.mujer) # Al ser el p-value > alfa, aceptamos que es una distribución normal
+t = t.test(peso.mujer)
+(t$conf.int)
+```
+El peso medio se encuentra entre los 54.07 y los 58.58 kilos en la población femenina con una confianza del 95%
+    
+
+#### D) Estudios recientes afirman que la altura media de las mujeres de esta población es de 167 cm. A la vista de estos datos, ¿Podemos aceptar dicha hipótesis con un nivel de significación del 3%? Justificar la respuesta
+```{r}
+altura.mujer = subset(datos, Sexo=="mujer")$Altura
+shapiro.test(altura.mujer) # Al ser el p-value > alfa, aceptamos que es una distribución normal
+t = t.test(altura.mujer, mu=167, alfa=0.03)
+t$p.value
+
+```
+Teniendo en cuenta el p-valor obtenido (0.5327107), que es mayor al nivel de significacion escogido (0.03), entonces no existen evidencias significativas para rechazar la hipótesis nula, por lo cual aceptamos que la estatura media de las mujeres es de 167 cm.
+```{r}
+t$conf.int
+```
+Además, usando el intervalo de confianza, podemos observar que efectivamente el valor buscado, 167 cm, se encuentra dentro, por lo que refuerza nuestra opinión sobre que podemos aceptar la hipótesis nula, es decir, la media femenina en estatura asciende hasta los 167 cm.
+    
+
+#### E) Calcular el intervalo de confianza para el Pulso1 medio de las mujeres que no fuman
+```{r}
+fumar.mujer = subset(datos, Sexo=="mujer" & Fumar == "no fuma")$Pulse1
+shapiro.test(fumar.mujer) # Al ser el p-value > alfa, aceptamos que es una distribución normal
+t = t.test(fumar.mujer)
+t$conf.int
+```
+El pulso se encuentra entre las 70 y las 79 pulsaciones con una confianza del 95% en las mujeres no fumadoras
+    
+
+#### F) Comparar el peso de hombres y mujeres con un nivel de significación de 5%. Representar gráficamente. Conclusiones
+```{r}
+peso.mujer = subset(datos, Sexo=="mujer")$Peso
+peso.hombre = subset(datos, Sexo=="hombre")$Peso
+
+shapiro.test(peso.mujer) # Al ser el p-value > alfa, aceptamos que es una distribución normal
+shapiro.test(peso.hombre) # Al ser el p-value > alfa, aceptamos que es una distribución normal
+
+# Realizamos el estudio de la varianza, siendo H0 que ambas son iguales
+var.test(peso.mujer, peso.hombre)
+# Como p-value > alfa, no existen evidencias significativas para rechazar la hipótesis nula, por tanto la aceptamos, es decir, sus varianzas son iguales (V(hombre)/V(mujer))=1
+
+# Ahora estudiamos su comparación, es decir, si las medias son iguales o no. Para ello, MUh = MUm --> MUh-MUm = 0, es decir, estudiamos que mu sea igual a 0
+t = t.test(peso.mujer,peso.hombre,var.equal=T, mu=0, alfa=0.5)
+
+t$p.value
+
+```
+Como podemos observar con el p-value (7.522e-14) es menor que el nivel de significación, por tanto no podemos aceptar la hipótesis nula, es decir, "aceptamos" la hipótesis alternativa, que nos dice que la media de los pesos entre ambos sexos no es la misma.
+```{r}
+t.test(peso.mujer, peso.hombre, var.equal=T, alternative="less")
+```
+Ahora realizamos la comparación para ver quien pesa más en ambos sexos. Tras realizar la comparativa con la hipótesis alternativa de que las mujeres pesan menos que los hombres, el p-valor resulta menor que el nivel de significación, por lo que podemos rechazar la hipótesis nula y "aceptar" la alternativa, es decir, las mujeres pesan menos que los hombres.
+```{r}
+boxplot(peso.mujer, peso.hombre, horizontal=T, col="orange")
+```
+    
+
+#### G) Contrastar si la proporción de fumadores es del 30%
+```{r}
+fumar.bern = datos$Fumar =="fuma"
+tabla.x.bern = table(fumar.bern)
+x.bern.prop = prop.test(tabla.x.bern, p=0.30)
+x.bern.prop$p.value
+```
+Como podemos observar, el p-valor resultanto es de 0, menor al nivel de significación, por lo tanto, existen evidencias significativas para rechazar la hipótesis nula, por lo cual "aceptamos" la hipótesis alternativa, es decir, no el 30% de la población fuma
+    
+
+#### H) Determinar si hay diferencia significativa entre la proporción de hombres y mujeres que fuman
+```{r}
+mujeres = subset(datos, Sexo=="mujer")
+hombres = subset(datos, Sexo=="hombre")
+t.mujeres = table(mujeres$Fumar)
+t.hombres = table(hombres$Fumar )
+t.total = rbind(t.mujeres, t.hombres)
+t.proptest = prop.test(t.total,correct=FALSE)
+
+t.proptest$p.value
+```
+Como el p-valor obtenido (0.3117858) es mayor que 0.05 no se rechaza H0, es decir,consideramos iguales las dos propabilidades en cuanto al porcentaje de fumadores o no hemos encontrado evidencias estadísticas significativas para rechazar H0.
+    
+
+#### I) Tomando Pulse1 y Pulse2 como las pulsaciones antes y después de correr, ¿se pueden considerar iguales las medias de dichas pulsaciones? En caso negativo, indicar la de valor mayor.
+```{r}
+x = datos$Pulse1
+y = datos$Pulse2
+t = t.test(x, y, paired=T)
+t$p.value
+```
+Como podemos observar por el p-value, muy cercano a 0, menor al nivel de significación, es decir, existen evidencias significativas para rechazar la hipótesis nula, es decir, "aceptamos" la hipótesis alternativa de que no son iguales
+```{r}
+t = t.test(x, y, alternative="greater", paired=T)
+t$p.value
+```
+Como podemos observar por el p-value de 0.9999975, es mayor que el nivel de significación, por lo que no existen evidencias significativas para rechazar la hipótesis nula, es decir, aceptamos que Pulse1 es mayor que Pulse2
