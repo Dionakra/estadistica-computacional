@@ -1,5 +1,5 @@
 ---
-title: "Práctica 2"
+title: "Tema 1 - Introducción a R (II)"
 output: html_document
 ---
 #ESTADÍSTICA COMPUTACIONAL
