@@ -1,0 +1,281 @@
+
+---
+title: "TEMA 5. TÉCNICAS DE REDUCCIÓN DE LA DIMENSIÓN(2)"
+output: html_document
+---
+
+
+
+## ESTADÍSTICA COMPUTACIONAL
+
+**GRADO EN INGENIERÍA INFORMÁTICA-INGENIERÍA DEL SOFTWARE**
+
+**GRADO EN INGENIERÍA INFORMÁTICA- TECNOLOGÍAS INFORMÁTICAS**
+
+**Juan M. Muñoz Pichardo - María Dolores Cubiles de la Vega**
+
+**Departamento de Estadística e I.O. Universidad de Sevilla**
+
+____________________________________________________________________
+
+
+###LECTURA FICHERO DE DATOS 
+
+Datos: ACPGinecologia.csv 
+
+Descripción: 
+      REVISTA CHILENA DE OBSTRESTICIA Y GINECOLOGÍA, 2006; 71(1): 17-25
+      "ANÁLISIS DE COMPONENTES PRINCIPALES APLICADO A VARIABLES RESPECTO A LA MUJER GESTANTE 
+      EN LA REGIÓN DE LAS AMÉRICAS"
+      Hugo Salinas P., Jaime Albornoz V., Alvaro Reyes P., Marcia Erazo B., Rodolfo Ide V.
+
+Se recopila información oficial de los países, correspondiente a variables relacionadas con la mujer embarazada y los recursos potenciales utilizados en su atención, además de los resultados obtenidos en dicha atención. Se estudiaron 9 variables:
+
+    -IAR1   Tasa global de fecundidad (hijos/mujer) 2003
+    -IAR2   Tasa cruda de natalidad (por 1.000 habitantes)
+    -IAR3   Razón de mortalidad materna reportada (por 100.000 nv)
+    -IAR4   Prevalencia de uso de métodos anticonceptivos en mujeres en edad fértil (%)
+    -IAPP1  % población gestante atendida por personal capacitado durante embarazo
+    -IAPP2  Proporción de partos atendidos por personal capacitado (%)
+    -IG1    Gasto nacional en salud por año per cápita (US$ corrientes) ($ per capita)
+    -IG2    Gasto nacional en salud por año como proporción del PIB (%)
+    -IG3    Gasto público en salud por año como % del gasto nacional en salud (%)
+
+
+```{r}
+datos <- read.table("ACPGinecologia.csv", header=TRUE, sep=";",row.names="PAIS")
+
+names(datos)
+datos
+class(datos)
+
+```
+
+
+
+
+## ANÁLISIS DE COMPONENTES PRINCIPALES (ACP)
+
+Orden básica: princomp(...)
+
+    princomp(formula, data = NULL, subset, ...)
+    princomp(x, cor = FALSE, scores = TRUE, covmat = NULL, subset = rep(TRUE, nrow(as.matrix(x))), ...)
+
+ARGUMENTOS:
+   
+  - formula:  formula sin variable respuesta, sólo con variables numéricas
+            Por ejemplo:  ~ varX1 + varX2 + varX3 + varX4
+
+  - data  : un marco de datos opcional que contenga las variables de la fórmula
+
+  - subset : un vestor opcional para seleccionar las filas (observaciones) de la matriz de datos
+
+  - x  : matriz o marco de datos que proporciona los datos que proporciona los datos para el ACP
+
+  - cor: Valor lógico (T ó F) indicando si se usa la matriz de correlación (T) o la matriz de covarianzas (F).
+       
+  - scores : valor lógico (T/F) indicando si las puntuaciones de cada c.p. deben ser calculadas  
+
+RESULTADOS:
+ 
+  Crea un objeto "princomp" que recoge la siguiente información 
+   
+   - sdev : desviaciones estándar de las comp.principales.
+   - loadings : matriz de cargas (es decir, matriz de autovectores)
+   - center   : las medias 
+   - scaling  : la escala aplicada a cada variable
+   - n.obs    : número de observaciones 
+   - scores   : Si se ha solicitado, las puntuaciones de los datos en las c.p.
+
+
+### Resumen, media y desviación típica.
+
+```{r}
+summary(datos)
+colMeans(datos) #medias
+apply(datos,2,mean) #medias
+apply(datos,2,sd) # desviaciones típicas
+
+```
+
+
+### Matriz de covarianzas y matriz de correlación
+```{r}
+Sigmaestim <- round(cov(datos),3)
+Sigmaestim
+Restim<-round(cor(datos),3)
+Restim
+
+```
+
+
+#Análisis de Componentes Principales sobre la matriz de Correlación
+```{r}
+cp<-princomp(~.,data=data.frame(datos),cor=TRUE,scores=T)
+cp
+names(cp)
+
+```
+Proporciona, básicamente las desviaciones típicas de las componentes principales
+
+### Desviacion típica, porcentaje de varianza explicativa
+
+Con la orden "summary" se obtiene un resumen del objeto creado, que contiene información sobre la relevancia de las componentes principales, con:
+
+    - Desviaciones típicas de las C.P. (raiz cuadrada de los autovalores asociados)
+    - Proporción de varianza explicada por cada C.P., es decir, el autovalor asociado dividido por la suma de los autovalores. 
+    - Proporción de variabilidad acumulada.
+
+
+```{r}
+summary(cp)
+cp$sdev
+
+```
+
+
+###Autovalores (recuérdese que coinciden con la varianza de cada cp)
+Se obtiene de dos formas distintas:
+
+    - "eigen( )$values"" es una orden del álgebra matricial (autovalores de la matriz)
+    - "cp$dev" es el vector de desviaciones típicas de las CP almacenadas en el objeto "cp"
+
+```{r}
+eigen(Restim)$values
+cp$sdev[1]^2 #Coincide con el primer autovalor
+
+```
+
+
+
+###Representación gráfica de la varianza explicada
+
+```{r}
+plot(cp)
+
+```
+
+### Autovectores o matriz de cargas
+
+Al igual que los autovalores, los autovectores de la matriz de correlación se puede obtener a través del objeto "cp" o bien directamente por la orden del álgebra matricial.
+
+Tales autovectores contienen los coeficientes de las combinaciones lineales que definen las componentes principales.
+
+```{r}
+cp$loadings
+eigen(Restim)$vectors
+
+```
+
+
+
+### Puntuaciones de las cp en cada uno de los casos
+Si se desea obtener las puntuaciones (scores) o valores de las CP en cada observación o caso, se pueden extraer del objeto creado "cp" o con la orden "predict()". Esta última orden permite obtenerlas para casos que no están incluidos en el conjunto de datos inicial
+
+
+```{r}
+cp$scores
+predict(cp)
+
+```
+
+
+### Correlaciones entre las variables originales y las C.P.
+
+Estas correlaciones nos pueden permitir interpretar las Componentes principales
+
+```{r}
+C=cor(datos,predict(cp))
+C
+
+```
+
+### Centros o Medias muestrales de las variables originales
+
+```{r}
+cp$center
+colMeans(datos)
+
+```
+
+###Escalas y desviaciones típicas de las variables originales
+```{r}
+cp$scale # (divide por n numero de casos)
+apply(datos,2,sd) #(divide por (n-1) )
+
+```
+
+###Nuevo resumen
+(Para recordar la variabilidad explicada)
+
+```{r}
+summary(cp)
+
+
+```
+
+
+# Suponiendo que se consideran sólo las 2 primeras componentes principales
+
+Con la orden summary(cp) se ha obtenido: 
+
+- Variabilidad explicada conjuntamente 67,15%
+- Variabilidad explicada por CP1:      50,38%
+- Variabilidad explicada por CP2:      16,76%
+
+Matriz de correlaciones de cp con variables originales
+
+```{r}
+C=cor(datos,predict(cp)[,1:2])
+C
+
+```
+
+
+# Puntuaciones y representación gráfica
+
+La primera gráfica es un plot de las variables originales, que resulta complejo poder visualizar.
+
+La segunda es la representación de los paises en los ejes determinados por las Componentes Principales, que nos facilita una visualización del comportamiento de los mismos
+
+La tercera representa la correlación de cada variable original con las dos primeras CP
+
+
+```{r}
+cp$scores[,1:2]
+plot(datos)
+
+
+plot(cp$score[,1],cp$score[,2],pch=16,xlab="Primera C.P.",ylab="Segunda C.P.",ylim=c(-3,4))
+text( cp$score[,1],cp$score[,2], row.names(datos), cex=0.7, pos=3, col="blue")
+grid()
+abline(h=0,v=0)
+
+
+plot(C[,1],C[,2],pch=16,xlab="Primera C.P.",ylab="Segunda C.P.",xlim=c(-1.0,1.0),ylim=c(-1,1))
+text( C[,1],C[,2], row.names(C), cex=0.7, pos=3, col="blue")
+grid()
+abline(h=0,v=0)
+
+```
+
+
+
+# Comentarios incluidos en el artículo de referencia
+
+- La matriz de correlaciones variables-cp, nos muestra que la primera componente se correlaciona, en forma directamente proporcional, con la variable IAPP2 (proporción de partos atendidos por personal capacitado) y con ISR4 (prevalencia de uso de métodos anticonceptivos en mujeres en edad fértil).
+
+- Se correlaciona en forma inversa con la ISR2 (tasa cruda de natalidad), ISR1 (tasa global de fecundidad) y con ISR3 (razón de mortalidad materna).
+
+- Con las restantes, la correlación es positiva pero con valores moderados
+
+- La segunda CP se relaciona en forma directa con IG2 (gasto nacional en salud por año como proporción del PIB) y en forma inversa con IG3 (gasto público en
+salud por año como proporción del gasto nacional en salud). 
+
+- Asimismo, se relaciona en forma directa, aunque con menos significación estadística,con (IG1) el gasto nacional en salud por año per cápita. 
+
+- Con las demás variables estudiadas se encontró una baja correlación.
+
+
+
+

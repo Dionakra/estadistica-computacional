@@ -1,0 +1,224 @@
+---
+title: "TEMA 4. MODELOS DE REGRESIÓN. (1)"
+output: html_document
+---
+
+
+
+## ESTADÍSTICA COMPUTACIONAL
+
+**GRADO EN INGENIERÍA INFORMÁTICA-INGENIERÍA DEL SOFTWARE**
+
+**GRADO EN INGENIERÍA INFORMÁTICA- TECNOLOGÍAS INFORMÁTICAS**
+
+**Juan M. Muñoz Pichardo - María Dolores Cubiles de la Vega**
+
+**Departamento de Estadística e I.O. Universidad de Sevilla**
+
+____________________________________________________________________
+
+
+###LECTURA FICHERO DE DATOS 
+ 
+ Datos: Advertinsig.csv 
+ 
+ Descripción: 
+      ventas de un producto en 200 mercados diferentes, junto con los 
+      presupuestos de publicidad del producto en cada uno de esos mercados 
+      en tres diferentes medios de comunicación: tv, radio y prensa.
+ 
+ Variables: Case ; TV ; Radio ; Newspaper : Sales
+
+
+
+
+
+```{r}
+datos <- read.table("Advertising.csv", header=TRUE, sep=",")
+
+par(mfrow=c(1,3))
+plot(datos$TV,datos$Sales,lwd=2, pch=16,xlab="Gastos Publicitarios en TV",ylab="Ventas")
+plot(datos$Radio,datos$Sales,lwd=2,pch=16,xlab="Gastos Publicitarios en Radio",ylab="Ventas")
+plot(datos$Newspaper,datos$sales,lwd=2,pch=16,xlab="Gastos Publicitarios en Prensa",ylab="Ventas")
+par(mfrow=c(1,1))
+
+```
+
+
+
+###REGRESIÓN LINEAL SIMPLE
+
+Variable objetivo: Sales ; Variable explicativa: TV
+
+Orden básica: lm (linear models):      lm(formula, data= , ....)
+
+- Crea un objeto "lm" que recoge la información del modelo ajustado. Los datos utilizados quedan incorporados a la información del modelo a través de la especificación (por defecto).
+     
+               lm(formula, data= , model=TRUE)
+
+- No obstante se puede eliminar con "model=FALSE", y se puede incorporar la variable explicativa (x=TRUE) y/o la variable objetivo (y=TRUE)
+
+- Con la orden "anova" proporciona la Tabla de Análisis de la Varianza
+
+- Con la orden "summary" proporciona lo más relevante del modelo, en concreto:
+      - REsumen descriptivo de los residuos
+      - Tabla de coeficientes con: estimación, error de estimación, contraste sobre la nulidad del coeficiente o significación del coeficiente
+      - Error estandar residual = estimación del parámetro sigma =raiz(C.M.error)
+      - Cuadrado del Coeficiente de correlación múltiple (R2)
+      - Estimación de R2 ajustada
+      - Estadístico F del contraste ANOVA, con su p-valor
+
+Creación del objeto sales1.mod en el que se almacenan los resultados del modelo (estimaciones, valores ajustados,...)
+
+```{r}
+sales1.mod <- lm(Sales~TV,data=datos)
+
+```
+
+Resultados básicos del modelo: las estimaciones de los coeficientes
+```{r}
+sales1.mod  
+
+```
+
+Resumen de los resultados del modelo:
+```{r}
+summary(sales1.mod)
+```
+
+Tabla de Análisis de la Varianza del modelo
+```{r}
+anova(sales1.mod)
+```
+
+Tipo o clase de objeto y nombre de las variables y resultados que contienen
+```{r}
+class(sales1.mod) ## proporciona información sobre el tipo de objeto
+names(sales1.mod) ## proporciona los nombres de lo que contiene el objeto
+
+```
+
+Las estimaciones de los coeficientes (dos opciones posibles)
+
+```{r}
+sales1.mod$coefficients
+coef(sales1.mod)
+```
+
+Vector de los residuos ordinarios del modelo (se solicita específicamente el asociado al caso 200 )
+```{r}
+sales1.mod$residuals    
+sales1.mod$residuals[200]
+
+```
+
+
+Rango numérico del modelo ajustado (detalles en regr. múltiple): orden "sales1.mod$rank" 
+
+Vector de valores ajustados, solicitando sólo el asociado al caso 150.
+```{r}
+sales1.mod$fitted.values[150]
+
+```
+
+Grados de libertad de los residuos (n-2)
+
+```{r}
+sales1.mod$df.residual
+
+```
+
+Con la orden "sales1.mod$model" se obtienen los datos usados en el modelo. En particular, se puede comprobar para el caso 1:
+
+```{r}
+sales1.mod$model[1,]
+datos$Sales[1]
+datos$TV[1]
+
+```
+
+
+Intervalos de confianza para los parámetros, con niveles de confianza 95% y 99%
+
+```{r}
+confint(sales1.mod)  
+confint(sales1.mod,level=0.99) 
+
+```
+
+###GRAFICOS 
+
+Plot de la variable objetivo frente a la variable explicativa
+```{r}
+plot(datos$TV,datos$Sales)
+abline(sales1.mod,lwd=3,col="red")
+
+```
+
+Otros gráficos similares:
+
+```{r}
+plot(datos$TV,datos$Sales,col="red")
+
+plot(datos$TV,datos$Sales,pch=20)
+
+plot(datos$TV,datos$Sales,pch="+")
+
+plot(1:20,1:20,pch=1:20)
+
+```
+
+
+
+Gráficos enlazados al objeto lm, útiles en la validación del modelo:
+
+ - Residuos ordinarios frente a valores ajustados
+ - Residuos estandarizados frente a valores ajustados
+ - Q-Q plot sobre normalidad de los residuos
+ - Residuos estandarizados frente a valores "leverage", incluyendo la distancia de Cook (para detección de puntos influyentes).
+
+
+```{r}
+par(mfrow=c(2,2))
+plot(sales1.mod)
+par(mfrow=c(1,1))
+
+plot(sales1.mod)
+
+```
+
+
+Otras representaciones gráficas similares
+
+
+```{r}
+plot(predict(sales1.mod), residuals(sales1.mod),xlab="valores ajustados",ylab="residuos")
+plot(predict(sales1.mod), rstudent(sales1.mod),xlab="valores ajustados",ylab="residuos studentizados")
+plot(hatvalues(sales1.mod),main="Valores diagonales de la matriz de predicción,leverage")
+
+```
+
+
+###PREDICCIONES
+
+Oel objeto lm que se ha creado, permite predecir con el modelo ajustado sobre un conjunto de datos fijado, con un intervalo de confianza para la media o esperanza de la predicción y con el denominado intervalo de predicción 
+
+Orden básica:       predict(mod,subdatos, interval="confidence")
+
+     - mod es el modelo previamente ajustado con "lm"
+     - subdatos es el conjunto de datos de var. explicativas sobre el que se desee obtener las predicciones
+     - interval="confidence", o bien, interval="prediction"
+
+```{r}
+predict(sales1.mod,data.frame(TV=(c(0,50,100,150,200,250,300,350,400))), interval="confidence")
+predict(sales1.mod,data.frame(TV=(c(0,50,100,150,200,250,300,350,400))), interval="prediction")
+ 
+```
+
+
+
+
+
+
+
+

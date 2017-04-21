@@ -1,0 +1,281 @@
+
+---
+title: "TEMA 5. TÉCNICAS DE REDUCCIÓN DE LA DIMENSIÓN(1)"
+output: html_document
+---
+
+
+
+## ESTADÍSTICA COMPUTACIONAL
+
+**GRADO EN INGENIERÍA INFORMÁTICA-INGENIERÍA DEL SOFTWARE**
+
+**GRADO EN INGENIERÍA INFORMÁTICA- TECNOLOGÍAS INFORMÁTICAS**
+
+**Juan M. Muñoz Pichardo - María Dolores Cubiles de la Vega**
+
+**Departamento de Estadística e I.O. Universidad de Sevilla**
+
+____________________________________________________________________
+
+
+###LECTURA FICHERO DE DATOS 
+
+ Datos:         epf1999.xls
+
+Los datos corresponden a la Encuesta de Presupuestos Familiares (1990/91) en España (fichero epf1999.csv) y presentan los gastos medios de las 
+familias españolas para las 51 provincias (Ceuta y Melilla aparecen unidas como una provincia) en nueve epígrafes:
+
+     X1 =alimentación,         X2 =vestido y calzado,    X3 =vivienda,
+     
+     X4 =mobiliario doméstico, X5 =gastos sanitarios,    X6 =transportes,
+     
+     X7 =enseñanza y cultura,  X8 =turismo y ocio,       X9 =otros gastos.
+
+ Están extraídos del libro Peña, D. (2002). Análisis de datos multivariantes. McGraw-Hill.
+ 
+ Y se pueden obtener en la web:
+
+   http://www.mhe.es/universidad/ciencias_matematicas/pena/ficheros.html
+
+La matriz de covarianzas resume la variabilidad de estas 9 variables en los 51 elementos observados. Como las distribuciones de los gastos son muy asimétricas, las variables 
+se han expresado en logaritmos.
+
+
+```{r}
+datos <- read.table("epf1999.csv", header=TRUE, sep=";",row.names="Provincia")
+
+names(datos) 
+head(datos)
+class(datos)
+
+```
+
+
+## ANÁLISIS DE COMPONENTES PRINCIPALES (ACP)
+
+Orden básica: princomp(...)
+
+    princomp(formula, data = NULL, subset, ...)
+    princomp(x, cor = FALSE, scores = TRUE, covmat = NULL, subset = rep(TRUE, nrow(as.matrix(x))), ...)
+
+ARGUMENTOS:
+   
+  formula:  formula sin variable respuesta, sólo con variables numéricas
+            Por ejemplo:  ~ varX1 + varX2 + varX3 + varX4
+
+  data  : un marco de datos opcional que contenga las variables de la fórmula
+
+  subset : un vestor opcional para seleccionar las filas (observaciones) de la matriz de datos
+
+  x  : matriz o marco de datos que proporciona los datos que proporciona los datos para el ACP
+
+  cor: Valor lógico (T ó F) indicando si se usa la matriz de correlación (T) o la matriz de covarianzas (F).
+       
+ scores : valor lógico (T/F) indicando si las puntuaciones de cada c.p. deben ser calculadas  
+
+
+
+RESULTADOS:
+ 
+  Crea un objeto "princomp" que recoge la siguiente información 
+  
+   sdev : desviaciones estándar de las comp.principales.
+  
+   loadings : matriz de cargas (es decir, matriz de autovectores)
+  
+   center : las medias 
+  
+   scaling : la escala aplicada a cada variable
+  
+   n.obs   : número de observaciones 
+  
+   scores  : Si se ha solicitado, las puntuaciones de los datos en las c.p.
+
+### Resumen, media y desviación típica.
+
+```{r}
+summary(datos)
+colMeans(datos) #medias
+apply(datos,2,mean) #medias
+apply(datos,2,sd) # desviaciones típicas
+
+```
+
+### Matriz de covarianzas y matriz de correlación
+```{r}
+Sigmaestim <- round(cov(datos),3)
+Sigmaestim
+Restim<-round(cor(datos),3)
+Restim
+
+```
+
+
+
+### Análisis de Componenetes Principales sobre la matriz de Covarianzas
+```{r}
+cp<-princomp(~.,data=data.frame(datos),cor=FALSE,scores=T)
+cp
+names(cp)
+
+```
+Proporciona, básicamente las desviaciones típicas de las componentes principales
+
+
+### Desviacion típica, porcentaje de varianza explicativa
+Con la orden "summary" se obtiene un resumen del objeto creado, que contiene información sobre la relevancia de las
+componentes principales, con:
+
+ - Desviaciones típicas de las C.P. (raiz cuadrada de los autovalores asociados)
+ 
+ - Proporción de varianza explicada por cada C.P., es decir, el autovalor asociado dividido por la suma de los autovalores.
+
+ - Proporción de variabilidad acumulada.
+ 
+```{r}
+summary(cp)
+cp$sdev
+
+```
+
+
+
+###Autovalores (recuérdese que coinciden con la varianza de cada cp)
+Se obtiene de dos formas distintas: 
+
+- "eigen(  )$values"" es una orden del álgebra matricial (autovalores de la matriz)
+
+- "cp$dev"  es el vector de desviaciones típicas de las CP almacenadas en el objeto "cp"
+
+```{r}
+eigen(Sigmaestim)$values
+cp$sdev[1]^2 #Coincide con el primer autovalor
+
+```
+
+
+
+###Representación gráfica de la varianza explicada
+
+```{r}
+plot(cp)
+
+```
+
+### Autovectores o matriz de cargas
+
+Al igual que los autovalores, los autovectores de la matriz de varianzas y covarianzas se puede obtener a través del objeto "cp"
+o bien directamente por la orden del álgebra matricial.
+
+Tales autovectores contienen los coeficientes de las combinaciones lineales que definen las componentes principales.
+
+
+```{r}
+cp$loadings
+eigen(Sigmaestim)$vectors
+
+```
+
+
+
+### Puntuaciones de las cp en cada uno de los casos
+
+Si se desea obtener las puntuaciones (scores) o valores de las CP en cada observación o caso, se pueden extraer del objeto creado "cp" o con la orden "predict()". Esta última orden permite obtenerlas para casos que no están incluidos en el conjunto de datos inicial
+
+```{r}
+cp$scores
+predict(cp)
+
+```
+
+
+### Correlaciones entre las variables originales y las C.P.
+
+Estas correlaciones nos pueden permitir interpretar las Componentes principales
+```{r}
+C=cor(datos,predict(cp))
+C
+
+```
+
+Por ejemplo, la CP2 está fundamentalmente correlacionada con LogOtros, mientras que la tercera con LogSan
+
+
+### Centros o Medias muestrales de las variables originales
+
+
+
+```{r}
+cp$center
+colMeans(datos)
+
+```
+
+
+###Escalas (en este caso 1) y desviaciones típicas de las variables originales
+```{r}
+cp$scale # (divide por n numero de casos)
+apply(datos,2,sd) #(divide por (n-1) )
+
+```
+
+###Nuevo resumen
+(con objeto de recordar la variabilidad explicada por cada componente)
+
+```{r}
+summary(cp)
+
+```
+
+# Suponiendo que se consideran sólo las 2 primeras componentes principales
+
+Con la orden summary(cp) se ha obtenido, para las dos primeras componentes principales 
+
+- Variabilidad explicada conjuntamente 80,95%
+
+- Variabilidad explicada por CP1: 74,12%
+
+- Variabilidad explicada por CP2:  6,83%
+
+
+Matriz de correlaciones de cp con variables originales
+
+```{r}
+C=cor(datos,predict(cp)[,1:2])
+C
+
+```
+
+# Puntuaciones y representación gráfica
+
+La primera gráfica es un plot de las variables originales, que resulta complejo poder visualizar.
+
+La segunda es la representación de las provincias en los ejes determinados por las Componentes Principales, que nos facilita una visualización del comportamiento de las provincias
+
+La tercera representa la correlación de cada variable original con las dos primeras CP
+
+```{r}
+cp$scores[,1:2]
+plot(datos)
+
+
+plot(cp$score[,1],cp$score[,2],pch=16,xlab="Primera C.P.",ylab="Segunda C.P.",ylim=c(-0.45,0.45))
+text( cp$score[,1],cp$score[,2], row.names(datos), cex=0.7, pos=3, col="blue")
+grid()
+abline(h=0,v=0)
+
+
+plot(C[,1],C[,2],pch=16,xlab="Primera C.P.",ylab="Segunda C.P.",xlim=c(-1.0,1.0),ylim=c(-1,1))
+text( C[,1],C[,2], row.names(C), cex=0.7, pos=3, col="blue")
+grid()
+abline(h=0,v=0)
+
+
+```
+
+
+
+
+
+

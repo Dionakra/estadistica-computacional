@@ -1,0 +1,113 @@
+---
+title: "Tema 5 - Ejercicio Decathlon"
+author: "David de los Santos Boix"
+date: "17 de abril de 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+$$
+Max\quad \sum_{i=1}^7 x_i
+$$
+
+
+
+## Ejercicio Decathlon previo examen
+Vamos a hacer un análisis de componentes principales para eliminar variables perdiendo la menor información posible. Lo que se hace es mantener en la medida de lo posible la matriz de covarianzas para que la pérdida de información sea la mínima posible.
+```{r}
+library(readr)
+datos <- read_delim("~/EC/datos/decatlon.csv",";", escape_double = FALSE, trim_ws = TRUE)[,1:10]
+summary(datos) # Te lo hace de todas las variables directamente, nada de una por una
+
+```
+
+Calculamos matriz de covarianzas (estimación de sigma) o matriz de correlación (estimación de la matriz R de correlaciones)
+```{r}
+# Matriz de Covarianzas
+Sigmaestim <- round(cov(datos),2)
+Sigmaestim
+
+#Matriz de Correlación
+Restim<-round(cor(datos),2)
+Restim
+
+# Análisis de componentes principales
+cp = princomp(~., data=data.frame(datos), cor=T)
+summary(cp)
+
+# Standard deviation: Por sí sola no vale, lo que vale es la varianza (esto al cuadrado)
+# Proportion of variance: Proporción de varianza explicada por cada una de las componentes, van en orden, es decir, la primera es la que más explica la varianza.
+#   La primera explica un 17.66% de la varianza total explicada
+#   La segunda un 16.80% de la varianza total explicada
+#   La tercera un 14.66% de la varianza total explicada
+#   And so on...
+#
+# Con la acumulativa podemos ver que cogiendo la primera y la segunda, explico el 34.46% de la varianza total explicada, que es poquito. Si pillamos la tercera, un 49.13% y vamos así con la 4 al 60% es razonable, con la 5 tenemos un 70%
+```
+
+Ahora calculamos los autovalores
+```{r}
+eigen(Restim)$values
+cp$sdev[1]^2 #Coincide con el primer autovalor
+# Vale cualquiera de los dos. ¿Pa qué sirve esto? Tenemos que decidir de las 10 componentes con cuantas nos quedamos. Hay un criterio que se llama la regla de KAYSER (o algo así), que te aconseja cuantas variables puedes tomar en función del autovalor. Coger tantas variables nuevas como autovalores mayores que uno tengamos, que en este caso son 5. La sexta componente en principio no, pero si nos hiciera falta (ya veremos por qué), pues no está de más en meter una variable. La séptima ya se aleja, así que nos movemos entre 5 y 6 variables nuevas, con esas 5 explicamos un 70.46%, no es perfecto pero es razonable. De 10 a 5 bajamos a lot.
+```
+
+Representación gráfica de las componentes principales
+```{r}
+plot(cp)
+```
+
+Ahora calculamos los autovectores, o también llamamos, matriz de carga
+```{r}
+# En la matriz de carga aparecen cachos en blanco porque son valores muy pequeños y se desprecian. La matriz de carga nos permite relacionar las nuevas variables con las anteriores. Es decir, nos va a decir cómo saco los valores de y1, que es con la primera columna, es decir y1 = 0.331*t100m -0.469*longitud -0.369*peso ... + 0.217*t1500m
+cp$loadings
+eigen(Restim)$vectors
+```
+
+Puntuaciones de las componentes principales de todos los casos, es decir, todos los individuos de nuestro fichero
+```{r}
+# Estas dos formas dan lo mismo
+cp$scores[, 1:5]
+predict(cp)[, 1:5]
+```
+
+Ahora tengo que ver la relación entre las variables originales y las nuevas variables, a ver cómo se comporta esto.
+```{r}
+C=cor(datos,cp$scores)
+C
+# La variable longitud, ¿En qué nueva variable se metería? En valor absoluto, sería con la 1 (0.62), Si la variable Y1 contiene a longitud, otra de las nuevas variables no puede contener a la longitud, no se puede partir. lo del signo ya veremos qué hacemos
+# y1: -longitud -t110val
+# y2: -altura   +t400m    -jabalina        # Atletas con valores bajos en altura y jabalina, altos en 400 m
+# y3: +peso     +t1500m
+# y4: +disco
+# y5: +pertiga  +t100m
+
+# Hay valores que la correlación están valores muy cercanos y JIBIRI JIBIRI, muy cercanos. Nos vamos al mayor siempre pero se está perdiendo info. La tabla de arriba es donde pones cada variable antigua en las nuevas
+
+# Problemas que nos podemos encontrar que nos haga cambiar esta configuración. Puede ocurrir que una de las 10 variables al hacer este procedimiento no apareciese en la nueva tabla, dado que eso significaría que esa variable es que se ha perdido por el camino, y eso NOPUEDEDESE. Se puede permitir que esté regular explicada, pero entera... Lo que se debe hacer es meter una componente más que coja esta variable y todo solucionado.
+# También hay casos en los que son parecidos y, además de ello, que sean bajos. De nuevo, para resolver este problema, se introduce una nueva componente a ver si ese problema se ESFUMA. La solución puede ser probar con otras técnicas de reducción de dimensión (como el análisis factorial)
+
+# Como el sexto autovalor, si hubieramos tenido problemas, era de 0.9X, pues podríamos cogerla
+
+```
+Ahora debemos saber qué significan esas Y1, Y2 etc... Así que en función de cada variable y su signo, deberíamos ponerle un nombre a cada una de esas 5 variables, por ejemplo y4 sería disco. Ahora hacemos un gráfico
+```{r}
+cp$scores[,1:2]
+plot(datos)
+
+# Entre las dos primeras variables
+plot(cp$score[,1],cp$score[,2],pch=16,xlab="Primera C.P.",ylab="Segunda C.P.",ylim=c(-0.45,0.45))
+text( cp$score[,1],cp$score[,2], row.names(datos), cex=0.7, pos=3, col="blue")
+grid()
+abline(h=0,v=0)
+
+# Usando la matriz de correlación entre datos y las predicciones
+plot(C[,1],C[,2],pch=16,xlab="Primera C.P.",ylab="Segunda C.P.",xlim=c(-1.0,1.0),ylim=c(-1,1))
+text( C[,1],C[,2], row.names(C), cex=0.7, pos=3, col="blue")
+grid()
+abline(h=0,v=0)
+```
+

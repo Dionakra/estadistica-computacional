@@ -1,0 +1,362 @@
+---
+output: html_document
+---
+##Juan M. Muñoz Pichardo - María Dolores Cubiles de la Vega
+
+##Departamento de Estadística e I.O. Universidad de Sevilla
+ 
+###TEMA 4. Regresión Lineal Múltiple
+
+
+
+**Fichero Datos: arboles.sav (SPSS)**
+
+**Variables: volumen (pies cúbicos), altura (pies) y diámetro (pulgadas) de una     muestra de 31 árboles del tipo cerezo negro, en Pensilvania.** 
+
+**Objetivo: realizar un estudio sobre el rendimiento de la madera, utilizando la altura y el diámetro de los árboles.**
+
+Lectura fichero de datos (formato SPSS) y descripción de variables.
+
+```{r}
+library(foreign)
+datos<-data.frame(read.spss("../datos/arboles.sav"))
+names(datos)
+attach(datos)
+summary(datos)
+
+```
+
+Gráfico de dispersión de la variable  volumen frente a altura.
+```{r}
+plot(volumen,altura)
+plot(volumen, diametro)
+
+# Desde el punto de vista gráfico, para estimar el volumen a partir de una sola variable (diámetro o altura), gráficamente lo que se hace es buscar la recta que mejor se ajusta a la nube de puntos (recta de regresión). Con esa ecuación de la recta podemos estimar el volumen en base a la recta de regresión
+
+# Para ver que variable tiene una dependencia lineal más grande, obviamente el diámetro, solo hay que ver la nube de puntos. La relación entre volumen y diámetro es más fuerte que entre volumen y altura
+```
+
+¿Existe relación lineal entre volumen y altura? Medir su intensidad. Obtener las estimaciones y contrastes de hipótesis para los coeficientes.
+```{r}
+# Aquí observamos realmente si hay relación lineal entre variables, midiendo la intensidad de esta relación entre otras cosas
+regre <- lm(volumen~altura) # Regresión lineal simple, simple porque solo hay una variable explicativa (altura). Una variable dependiente y otra independiente. La ecuación de regresión sería: vol = beta_0 + beta_1*altura, para completar esa ecuación necesitamos conocer la estimación de beta_0 y beta_1. ¿Cómo se calcula en R la regresión lineal simple? Con lm(y~x)
+# La estimación de beta_0 = -87.1236 y beta_1 = 1.5433, por lo que podemos escribir la ecuación de regreción concreta (Columna ESTIMATE de summary(regre)). Los p valores es pr(>|t|), en este caso 0.0037 < alfa, rechazamos la  hipotesis nula (B1 = 0, h1: B1!=0), eso implica que existe relación lineal significativa entre la variable altura y la variable volumen
+summary(regre)
+plot(volumen,altura)
+# Para la confiabilidad, Multiple R-Squared = 0.3579, esto nos indica si nos podemos fiar o no con los valores que nos ha dado. R^2 oscila entre 0 y 1. Cuando más cercano a 0, menos fiable el ajuste, cuanto mas cercano a 1, más fiable es la estimación que podamos realizar. Con 0.35 pues el ajuste no es muy bueno, aunque hay relación lineal significativa, no es muy intensa, es decir, cualquier estimación con la ecuación de arriba no sería muy buena
+
+
+########################
+## Lo mismo pero con la variable diámetro
+regredim = lm(volumen~diametro)
+summary(regredim)
+
+# la ecuación es volumen = -36.9435 + 5.0659*diametro
+# el p-valor es de 2e-16, < alfa, por lo tanto H0: b1=0, H1: b1!=0, "aceptamos" la alternativa, que es que hay relación significativa entre diametro y volumen
+# El valor R es 0.9353, por lo que la relación es muy intensa, por lo tanto es muy fiable la estimación que hagamos con esta ecuación
+
+```
+
+
+Tomamos todas las variables explicativas del fichero. Realizar un ajuste con un modelo de regresión lineal múltiple. 
+
+```{r}
+#p=2, 2 variables explicativas, por lo que la ecuación de regresión sería:
+# volumen = beta_0 + beta_1*altura + beta_2*diametro
+
+# Podemos hacer
+# regrelin<- lm(volumen~altura+diametro)
+regrelin<- lm(volumen~altura+diametro)
+regrelin<-lm(volumen~.,data=datos)
+summary(regrelin)
+
+# Ecuación: volumen = -57.9877 + 4.7082*diametro + 0.3393*altura
+# ¿Qué significan esos coeficientes? Fijada la variable altura, cuando se aumenta el diametro en una unidad, aumenta el volumen en 4.7082 unidades
+# p-valor de ambos es menor que alfa, por lo que beta_1 y beta_2 son diferentes de 0.
+
+# Contraste Fundamental!!!!!!!!!!
+# H0: b1=b2=....=bi=....=bn=0
+# H1: bi !=0
+# Se mira con el F-statistic, 255 con 2 variables y 28 grados de libertad y p-value < alfa, por tanto, Existe relación lineal significativa entre todas las variables explicativas y la variable volumen
+#R^2 es muy bueno, 0.948, por lo que nos podemos fiar a lot del modelo
+```
+
+Indicar la ecuación de regresión.
+
+```{r}
+coef(regrelin)
+```
+
+Calcular intervalos de confianza para los coeficientes del modelo.
+
+```{r}
+confint(regrelin) 
+```
+
+¿Existe relación lineal significativa entre todas las variables explicativas y la variable dependiente volumen?
+
+Estadístico F:   255 ,  p-value: < 2.2e-16
+
+Para el contraste fundamental obtenemos un p-valor muy pequeño, podemos indicar que existe relación lineal significativa entre las variables independientes (altura y diámetro) y la variable dependiente volumen.
+
+Medir la precisión del ajuste realizado con la regresión lineal múltiple.
+
+Multiple R-squared:  0.948
+
+
+Obtener los residuos para el modelo ajustado y representarlos gráficamente. ¿Se verifican las hipótesis de linealidad y homocedasticidad del modelo?
+
+```{r}
+# Todo modelo debe cumplir las siguientes hipótesis:
+# Linealidad (el sistema es lineal)
+# Homocedasticidad (igualdad de varianzas)
+# Normalidad (Test shapiro-wilk)
+# Comprobaremos las hipótesis a través de los residuos, dado que de otra forma, chungo
+# La normalidad podemos usar el test de shapiro wilk facilmente, pero a través de la normalidad de los residuos
+# Para el resto, esas hipótesis hay que resolverlas mediante procedimientos gráficos, lo cual es dificil de solventar
+
+par(mfrow=c(2,2)) # Hacer varios gráficas, 2 filas y dos columnas
+plot(regrelin)
+par(mfrow=c(1,1))
+# Se nos etiquetan posibles valores atípicos (31 y 2)
+# Para que se verifiquen la linealidad y homocedasticidad, trazando una línea desde 0, los puntos estén dispersos pero más o menos simétricos, con eso tenemos la linealidad, y si la distancia entre los de arriba y los de abajo, se verifica la homocedasticidad, miramos residuals vs fitted. En este caso falta linealidad, no hay demasiada simetría (ninguna). La homocedasticidad más o menos se cumple, la suma de distancias puede ser 0
+
+# Nosotros vamos a usar dos residuos. El normal (residuals(regrelin)) y el estudentizado, que es el rstudent
+
+plot(predict(regrelin), residuals(regrelin))
+plot(predict(regrelin), rstudent(regrelin))
+
+# Observamos cierta falta de linealidad, dado que más que ajustarse a una línea, tiene más sentido una parábola (anterior), y respecto a la homocedasticidad hay un punto que se aleja bastante
+# Linealidad ?? (meh, no se ve demasiado lineal)
+# Homocedasticidad ?? (meh, no se ve homocedastico)
+# Normalidad, allé vamos
+
+```
+
+
+
+¿Se verifica la hipótesis de Normalidad? Utilizar un contraste de hipótesis.
+
+```{r}
+shapiro.test(regrelin$residuals)
+
+# Como podemos observar, p> alfa, no existen evidencias para rechazar la hipotesis nula, los residuos son normales, el modelo verifica la hipótesis de normalidad
+# Normalidad OK (hooray)
+```
+Comprobar la hipótesis de homocedasticididad del modelo. En caso que no se verifique indicar la transformación que se debe realizar.
+
+```{r}
+library(car)
+# H0: Vx = Vy --> Homocedasticidad en el modelo
+# H1: Vx != By --> Heterocedasticidad en el modelo
+ncvTest(regrelin) # Test de Homocedasticidad, con p-valor 0.20, aceptamos hipótesis nula, el modelo es homocedástico
+# Linealidad ??
+# Homocedasticidad OK
+# Normalidad OK
+
+# Si no se verifica alguna de las hipótesis, tenemos que hacer una transformación en nuestro modelo de datos, si no lo podemos conseguir con los datos originales, se transforman, pero las transformaciones para cada una de las hipótesis, cada transformación es distinta
+spreadLevelPlot(regrelin)
+# Este comando nos da una posible transformación para los datos, es decir, una modificación respecto a la variable volumen para la homocedasticidad es elevar los valores al 0.8860785
+```
+
+Comprobar la existencia de posibles valores atípicos en el modelo.
+```{r}
+rstudent(regrelin)
+plot(predict(regrelin), abs(rstudent(regrelin)),pch=19, main="Residuos studentizados frente a val. ajustados")
+grid()
+lines(x=predict(regrelin),y=c(rep(3,31)),col="red")
+text( predict(regrelin), abs(rstudent(regrelin)), row.names(datos), cex=0.7, pos=3, col="black")
+# Este gráfico nos sirve para ver los posibles valores atípicos, que pueden verse el 1, 2, 3 y 31
+
+
+plot(abs(rstudent(regrelin)), pch=19, main="Index plot de Residuos Studentizados" )
+grid()
+lines(x=seq(1:31),y=c(rep(3,31)),col="red")
+text( seq(1:31), abs(rstudent(regrelin)), row.names(datos), cex=0.7, pos=3, col="black")
+
+#which(abs(rstudent(regrelin))>3)
+
+boxplot(rstudent(regrelin))$out
+# Con boxplot vemos que hay uno muy fuera únicamente, no 4 como antes, que es el 31 con 2.76 de valor (como se muestra en la rola)
+
+boxplot(residuals(regrelin))$out
+```
+
+
+
+Realizar un estudio de los leverage (apalancamiento)
+```{r}
+hatvalues(regrelin)
+plot(hatvalues(regrelin),main="Index plot de valores leverage",pch=19 )
+grid()
+hatcrit = (2*regrelin$rank)/(regrelin$df.residual+regrelin$rank)
+hatcrit # Valor de referencia dependiendo de los residuos, que es el límite que nos marca puntos de apalancamiento o leverage 
+which(hatvalues(regrelin)>hatcrit)
+
+## Total, que el 31 es atípico
+
+# Ahora es... ¿Como modificamos el modelo de datos? HOJO, que el R^2 era alto, 0.93, tendríamos que intentar solucionar esas hipótesis sin liarla parda.
+
+# Transformaciones posibles: Quitar la observación 31 y trabajar sin ella a ver que pasa
+# Se suele mejorar si en vez de usar la variable explicativa, usamos esa misma elevada al cuadrado, quicir, altura^2 en vez de altura
+# En vez de altura, jugar con Diametro (igual que arriba)
+
+```
+
+
+
+
+
+Obtener predicciones puntuales, así como intervalos de confianza y predicción para un árbol cuyo diámetro sea 21 y altura 82.
+
+```{r}
+predict(regrelin,newdata=data.frame(diametro=21,altura=82))
+predict(regrelin,newdata=data.frame(diametro=21,altura=82),interval= "confidence")
+predict(regrelin,newdata=data.frame(diametro=21,altura=82),interval="prediction")
+
+```
+
+¿Es adecuado el ajuste del modelo realizado ó se podría mejorar dicho modelo?
+Para contestar a esta pregunta podríamos probar algunas alternativas con objeto de mejorar el modelo:
+
+Propuesta 1.- Sustituir la variable altura por altura elevada al cuadrado 
+
+```{r,echo=T,eval=T}
+# Para el próximo día, las 3 propuestas analizadas y decir con cual de esas propuestas te quedas
+altura2 = altura^2
+regre1 = lm(volumen~diametro+altura2)
+summary(regre1)
+plot(regre1)
+
+# Ecuación: volumen = -45.68 + 4.694*diametro + 0.002349*altura
+# ¿Qué significan esos coeficientes? Fijada la variable altura, cuando se aumenta el diametro en una unidad, aumenta el volumen en 4.7082 unidades
+# p-valor de ambos es menor que alfa, por lo que beta_1 y beta_2 son diferentes de 0.
+
+# Contraste Fundamental!!!!!!!!!!
+# H0: b1=b2=....=bi=....=bn=0
+# H1: bi !=0
+# Se mira con el F-statistic, 259.9 con 2 variables y 28 grados de libertad y p-value < alfa, por tanto, Existe relación lineal significativa entre todas las variables explicativas y la variable volumen
+#R^2 es muy bueno, 0.9489, por lo que nos podemos fiar a lot del modelo
+# Todo modelo debe cumplir las siguientes hipótesis:
+# Linealidad (el sistema es lineal)
+# Homocedasticidad (igualdad de varianzas)
+# Normalidad (Test shapiro-wilk)
+# Comprobaremos las hipótesis a través de los residuos, dado que de otra forma, chungo
+# La normalidad podemos usar el test de shapiro wilk facilmente, pero a través de la normalidad de los residuos
+# Para el resto, esas hipótesis hay que resolverlas mediante procedimientos gráficos, lo cual es dificil de solventar
+
+par(mfrow=c(2,2)) # Hacer varios gráficas, 2 filas y dos columnas
+plot(regre1)
+par(mfrow=c(1,1))
+# Se nos etiquetan posibles valores atípicos (31 y 2)
+# Para que se verifiquen la linealidad y homocedasticidad, trazando una línea desde 0, los puntos estén dispersos pero más o menos simétricos, con eso tenemos la linealidad, y si la distancia entre los de arriba y los de abajo, se verifica la homocedasticidad, miramos residuals vs fitted. En este caso falta linealidad, no hay demasiada simetría (ninguna). La homocedasticidad más o menos se cumple, la suma de distancias puede ser 0
+
+# Nosotros vamos a usar dos residuos. El normal (residuals(regrelin)) y el estudentizado, que es el rstudent
+
+plot(predict(regre1), residuals(regre1))
+plot(predict(regre1), rstudent(regre1))
+
+# Observamos cierta falta de linealidad, dado que más que ajustarse a una línea, tiene más sentido una parábola (anterior), y respecto a la homocedasticidad hay un punto que se aleja bastante
+# Linealidad ?? (meh, no se ve demasiado lineal)
+# Homocedasticidad ?? (meh, no se ve homocedastico)
+# Normalidad, allé vamos
+
+# Como podemos observar, p (0.759)> alfa, no existen evidencias para rechazar la hipotesis nula, los residuos son normales, el modelo verifica la hipótesis de normalidad
+# Normalidad OK (hooray)
+shapiro.test(regre1$residuals)
+
+
+library(car)
+# H0: Vx = Vy --> Homocedasticidad en el modelo
+# H1: Vx != By --> Heterocedasticidad en el modelo
+ncvTest(regre1) # Test de Homocedasticidad, con p-valor 0.22, aceptamos hipótesis nula, el modelo es homocedástico
+# Linealidad ??
+# Homocedasticidad OK
+# Normalidad OK
+
+# Si no se verifica alguna de las hipótesis, tenemos que hacer una transformación en nuestro modelo de datos, si no lo podemos conseguir con los datos originales, se transforman, pero las transformaciones para cada una de las hipótesis, cada transformación es distinta
+spreadLevelPlot(regre1)
+# Este comando nos da una posible transformación para los datos, es decir, una modificación respecto a la variable volumen para la homocedasticidad es elevar los valores al 0.8888987
+
+
+```
+
+
+Propuesta 2.- Cambiar la variable diametro por diametro al cuadrado 
+
+```{r,echo=T,eval=T}
+diametro2 = diametro^2
+regre2 = lm(volumen~diametro2+altura)
+summary(regre2)
+
+# Ecuación: volumen = -27.511603 + 0.168458*diametro + 0.348809*altura
+# Contraste fundamental: F-statistic: 503.2 on 2 and 28 DF,  p-value: < 2.2e-16
+# R cuadrado = 0.9729
+par(mfrow=c(2,2)) # Hacer varios gráficas, 2 filas y dos columnas
+plot(regre2)
+par(mfrow=c(1,1))
+# Más o menos lineal
+
+plot(predict(regre2), residuals(regre2))
+plot(predict(regre2), rstudent(regre2))
+
+shapiro.test(regre2$residuals)
+# p-value = 0.1294 > alfa, es decir, es normal. WIIII
+
+library(car)
+ncvTest(regre2)
+# p-value = 0.1094 > alfa, es decir, homocedástico
+spreadLevelPlot(regre2)
+```
+
+Propuesta 3.- Filtrar la observación 31 (atípica)
+
+```{r,echo=T,eval=T}
+regre3 = lm(volumen~diametro+altura,data=datos[-31,])
+summary(regre3)
+plot(regre3)
+
+# Ecuación: volumen = -52.2362 + 4.4773*diametro + 0.2992*altura
+# Contraste fundamental: F-statistic: 226.3 on 2 and 27 DF,  p-value: < 2.2e-16
+# R cuadrado = 0.9437
+par(mfrow=c(2,2)) # Hacer varios gráficas, 2 filas y dos columnas
+plot(regre3)
+par(mfrow=c(1,1))
+plot(predict(regre3), residuals(regre3))
+plot(predict(regre3), rstudent(regre3))
+
+# Lineal tampoco mucho
+
+shapiro.test(regre3$residuals)
+# p-value = 0.3113 > alfa, es normal WIII
+
+library(car)
+ncvTest(regre3)
+# p = 0.310937 > alfa, homocedástico, wiii
+spreadLevelPlot(regre3)
+
+
+hatvalues(regre3)
+plot(hatvalues(regre3),main="Index plot de valores leverage",pch=19 )
+grid()
+hatcrit = (2*regre3$rank)/(regre3$df.residual+regre3$rank)
+hatcrit # Valor de referencia dependiendo de los residuos, que es el límite que nos marca puntos de apalancamiento o leverage 
+which(hatvalues(regre3)>hatcrit)
+```
+
+## Parece que el segundo mola más. Todos son normales y homocedásticos, pero el R^2 es mayor en el segundo
+
+```{r}
+# Ahora lo que se hace es rehacer el estudio con el modelo obtenido (el segundo) y calcular varias cosas, por ejemplo:
+# Predicciones Puntuales: y gorro
+# Intervalo de confianza E[Y/x]
+# Intervalo de predicción Y'/x
+# I. conf << I predicción
+
+# Obtener predicciones puntuales, así como intervalos de confianza y predicción para un árbol cuyo diámetro sea 21 y altura 82.
+
+predict(regre2,newdata=data.frame(diametro2=21*21,altura=82)) # Predicción puntual del volumen para estos datos
+predict(regre2,newdata=data.frame(diametro2=21*21,altura=82),interval= "confidence") # Probabilidad del 95% por defecto, igual que antes
+predict(regre2,newdata=data.frame(diametro2=21*21,altura=82),interval="prediction") # Límite inferior percentil 5, límite superior percentil 95
+
+```

@@ -1,0 +1,156 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+#ESTADÍSTICA COMPUTACIONAL
+
+##Juan M. Muñoz Pichardo - María Dolores Cubiles de la Vega
+
+##Departamento de Estadística e I.O. Universidad de Sevilla
+ 
+###TEMA 4. Regresión Lineal Múltiple
+
+
+
+FICHERO DE DATOS : airepolu.sav
+Variable Objetivo:  tasa de mortalidad (tasamor) 
+Variables Explicativas:
+       LLuvia: cantidad de lluvia registrada
+           educa: nivel de educación
+           densidad: densidad de población
+           pormin: Porcentaje de etnias minoritarias
+           nox: nivel de contaminación por nitrógeno
+           s02: nivel de contaminación por azufre
+           lnnox: log neperiano del nivel de contaminación por nitrógeno
+           lns02: log neperiano del nivel de contaminación por azufre
+Objetivo: estudiar los factores socio-culturales que influyen en la tasa de mortalidad de un conjunto de estados. 
+
+###################################################################
+
+Lectura de un fichero en formato SPSS y resumen de los datos
+
+```{r}
+library(foreign)
+datos<-data.frame(read.spss("../datos/airepolu.sav"))
+names(datos)
+summary(datos)
+
+```
+
+
+Regresión lineal Múltiple utilizando todas las variables explicativas.
+
+```{r}
+attach(datos)
+# Estudiar los factores socioculturales de las variables explicativas para ver cuales influyen (o no) en la tasa de mortalidad en ese conjunto de estados
+# Tenemos que tener cuidado colineales o correlacionadas, ya que nos puede llevar a resultados erróneos o sesgados por esa misma correlación. Solución a esto, planteamos de diferentes formas. Un estudio de la correlación de las variables previamente a hacer un estudio de nuestro modelo de regresión, o quitar las variables que estén muy correlacionadas una con otras
+# Método de regresión por pasos. Para quitar esto de en medio
+# Hay 3 tipos, pero explicaremos una
+#   Método hacia atrás (backward)
+#   Método hacia delante (forward)
+#   Método paso a paso (both) # Explicaremos este
+
+# C = Conjunto de variables explicativas, independientes entre ellas, del modelo de regresión. las que no estén en C, no nos valen, porque están correlacionadas con alguna de las que hay ahí dentro. Es decir, si hay 8 variables explicativas, C tendrá 8 o menos, quitando las correlacionadas.
+
+# C = {0} Candidata a Entrar --> F(Máx) Para ver si realmente entra (o no), se compara con un valor de F determinado o un P valor determinado. Si el P valor es mayor a 0.1, entra la variable. En caso contrario, no entra. C = C + {var1}. Pero pueden salir. ¿Candidata a salir? FMin de las de dentro, pero para que salga necesita una condición. Si se verifica, sale del modelo
+# Va iterando hasta que ni salga ni entre ninguna variable, dado que se quedará igual. Hacia delante solo entran. Hacia atrás solo va sacando
+regrelin<-lm(tasamor~lluvia+densidad+educa+pormin+nox+so2+lnox+lnso2,data=datos)
+summary(regrelin)
+regrelin$coef
+```
+
+
+##REGRESIÓN POR PASOS: función step
+AIC = - 2*log L + k * edf
+
+Regresion paso a paso: backward
+
+```{r}
+regrepas1<-step(regrelin, direction = c("backward"))
+regrepas1$coef
+summary(regrepas1)
+```
+
+Regresion paso a paso: forward
+
+```{r}
+regrepas2<-step(regrelin, direction = c("forward"))
+regrepas2$coef
+summary(regrepas2)
+```
+
+Regresion paso a paso: both
+
+```{r}
+regrepas3<-step(regrelin, direction = c("both"))
+regrepas3$coef
+summary(regrepas3)
+# tasamor = 948.48 + 1.84*lluvia - 14.19*educa +....
+
+```
+
+
+##Regresión con Variables Cualitativas## 
+Estudiamos si hay diferencia significativa en el saldo de la 
+tarjeta de crédito (balance) por sexo (entre hombres y mujeres)
+
+```{r}
+# Estimar el uso de la tarjeta en función del sexo, o comparar si el saldo entre mujeres y hombres funciona igual
+# Se usa variables ficticias. X = 1 (female) o 0 (male), por lo tanto, balance = b0 + b1*x (1 o 0)
+datos <- read.table("../datos/Credit.csv",sep=",",header=T)
+names(datos)
+attach(datos)
+table(Gender)
+
+
+ajuste = lm(Balance~Gender)
+summary(ajuste)
+# La media de la estimación del crédito para los hombres (x=0) es B0, es decir, 509. Para las mujeres, 509.80+19.73
+# Para saber si hay diferencias significativas, hacemos contraste. H0: B1 = 0; H1: B1!=0, p-valor = 0.669, se acepta hipotesis nula, no hay diferencias significativas, cuidao con el tema de la x, va con el contrasts
+levels(Gender)
+contrasts(Gender)
+
+```
+
+
+```{r}
+#Balance = b0 + b1x1 + b2x2
+# x1 = 1 asiatico
+# x1 = 0 no asiatico
+# x2 = 1 caucasico
+# x2 = 0 no caucasico
+# b0 africa american
+# b0 + b1 asian
+# b0 + b2 caucasian
+table(Ethnicity)
+ajuste = lm(Balance~Ethnicity)
+summary(ajuste)
+levels(Ethnicity)
+contrasts(Ethnicity)
+
+# Para ver si afecta o no, aceptamos hipotesis nula, no hay diferencia significativa entre los saldos medios de las tarjetas en base a ethnicity
+```
+
+
+
+
+## Regresión Lineal Múltiple
+## Variable Cuantitativa (Income) + Cualitativa (Student)
+
+```{r}
+table(Student)
+ajuste = lm(Balance~Income+Student)
+summary(ajuste)
+
+
+levels(Student)
+contrasts(Student)
+```
+
+
+
+
+
+
+

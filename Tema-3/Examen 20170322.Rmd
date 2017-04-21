@@ -26,6 +26,10 @@ load("../datos/Pulso.rda")
 set.seed(dni.cuatro)
 datos = Pulsaciones[sample((1:92), 85), ]
 dim(datos)
+
+## Test de shapiro solo para muestras de tipo continua, no en todas ¡¡ERROR!!
+## Escribir todo lo necesario en el papel para no tener que hacer doble corrección
+## Escribir todas las hipótesis y contrastes
 ```
     
 
@@ -103,6 +107,7 @@ boxplot(peso.mujer, peso.hombre, horizontal=T, col="orange")
 
 #### G) Contrastar si la proporción de fumadores es del 30%
 ```{r}
+## Aquí es el 70%, estamos comprobando lo contrario, el 0.70, al coger la categoría de referencia la primera, que en este caso es no fumar
 fumar.bern = datos$Fumar =="fuma"
 tabla.x.bern = table(fumar.bern)
 x.bern.prop = prop.test(tabla.x.bern, p=0.30)
@@ -130,6 +135,8 @@ Como el p-valor obtenido (0.3117858) es mayor que 0.05 no se rechaza H0, es deci
 x = datos$Pulse1
 y = datos$Pulse2
 t = t.test(x, y, paired=T)
+
+## Aquí falta testear la normalidad, DAMNIT, con la normalidad de la diferencia
 t$p.value
 ```
 Como podemos observar por el p-value, muy cercano a 0, menor al nivel de significación, es decir, existen evidencias significativas para rechazar la hipótesis nula, es decir, "aceptamos" la hipótesis alternativa de que no son iguales

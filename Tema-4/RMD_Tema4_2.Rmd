@@ -1,0 +1,424 @@
+---
+title: "TEMA 4. MODELOS DE REGRESI?N. (2)"
+output: html_document
+---
+
+
+
+## ESTAD?STICA COMPUTACIONAL
+
+**GRADO EN INGENIER?A INFORM?TICA-INGENIER?A DEL SOFTWARE**
+
+**GRADO EN INGENIER?A INFORM?TICA- TECNOLOG?AS INFORM?TICAS**
+
+**Juan M. Mu?oz Pichardo - Mar?a Dolores Cubiles de la Vega**
+
+**Departamento de Estad?stica e I.O. Universidad de Sevilla**
+
+____________________________________________________________________
+
+
+###LECTURA FICHERO DE DATOS 
+ 
+ Datos: Advertinsig.csv 
+ 
+ Descripci?n: 
+      ventas de un producto en 200 mercados diferentes, junto con los 
+      presupuestos de publicidad del producto en cada uno de esos mercados 
+      en tres diferentes medios de comunicaci?n: tv, radio y prensa.
+ 
+ Variables: Case ; TV ; Radio ; Newspaper : Sales
+
+
+
+
+
+```{r}
+datos <- read.table("../datos/Advertising.csv", header=TRUE, sep=",")
+
+par(mfrow=c(1,3))
+plot(datos$TV,datos$Sales,lwd=2, pch=16,xlab="Gastos Publicitarios en TV",ylab="Ventas")
+plot(datos$Radio,datos$Sales,lwd=2,pch=16,xlab="Gastos Publicitarios en Radio",ylab="Ventas")
+plot(datos$Newspaper,datos$sales,lwd=2,pch=16,xlab="Gastos Publicitarios en Prensa",ylab="Ventas")
+par(mfrow=c(1,1))
+
+```
+
+
+
+###REGRESI?N LINEAL M?LTIPLE
+
+Variable objetivo: Sales ; Variable explicativa: TV, Radio, Newspaper
+
+Orden b?sica: lm (linear models):      lm(formula, data= , ....)
+
+- Crea un objeto "lm" que recoge la informaci?n del modelo ajustado. Los datos utilizados quedan incorporados a la informaci?n del modelo a trav?s de la especificaci?n (por defecto).
+     
+               lm(formula, data= , model=TRUE)
+
+- No obstante se puede eliminar con "model=FALSE", y se puede incorporar la variable explicativa (x=TRUE) y/o la variable objetivo (y=TRUE)
+
+- Con la orden "anova" proporciona la Tabla de An?lisis de la Varianza
+
+- Con la orden "summary" proporciona lo m?s relevante del modelo, en concreto:
+      - REsumen descriptivo de los residuos
+      - Tabla de coeficientes con: estimaci?n, error de estimaci?n, contraste sobre la nulidad del coeficiente o significaci?n del coeficiente
+      - Error estandar residual = estimaci?n del par?metro sigma =raiz(C.M.error)
+      - Cuadrado del Coeficiente de correlaci?n m?ltiple (R2)
+      - Estimaci?n de R2 ajustada
+      - Estad?stico F del contraste ANOVA, con su p-valor
+
+Creaci?n del objeto sales2.mod en el que se almacenan los resultados del modelo (estimaciones, valores ajustados,...)
+
+```{r}
+sales2.mod <- lm(Sales~TV+Radio+Newspaper,data=datos)
+
+```
+
+Resultados b?sicos del modelo: las estimaciones de los coeficientes
+```{r}
+sales2.mod  
+
+```
+
+Resumen de los resultados del modelo:
+```{r}
+summary(sales2.mod)
+```
+
+Tabla de An?lisis de la Varianza del modelo
+```{r}
+anova(sales2.mod)
+```
+
+Tipo o clase de objeto y nombre de las variables y resultados que contienen
+```{r}
+class(sales2.mod) ## proporciona informaci?n sobre el tipo de objeto
+names(sales2.mod) ## proporciona los nombres de lo que contiene el objeto
+
+```
+
+Las estimaciones de los coeficientes (dos opciones posibles)
+
+```{r}
+sales2.mod$coefficients
+coef(sales2.mod)
+```
+
+Vector de los residuos ordinarios del modelo (se solicita espec?ficamente el asociado al caso 200 )
+```{r}
+sales2.mod$residuals    
+sales2.mod$residuals[200]
+
+```
+
+
+Rango num?rico del modelo ajustado (detalles en regr. m?ltiple): orden "sales1.mod$rank" 
+
+Vector de valores ajustados, solicitando s?lo el asociado al caso 150.
+```{r}
+sales2.mod$fitted.values[150]
+
+```
+
+Grados de libertad de los residuos (n-2)
+
+```{r}
+sales2.mod$df.residual
+
+```
+
+Con la orden "sales2.mod$model" se obtienen los datos usados en el modelo. En particular, se puede comprobar para el caso 1:
+
+```{r}
+sales2.mod$model[1,]
+datos$Sales[1]
+datos$TV[1]
+
+```
+
+
+Intervalos de confianza para los par?metros, con niveles de confianza 95% y 99%
+
+```{r}
+confint(sales2.mod)  
+confint(sales2.mod,level=0.99) 
+
+```
+
+###GRAFICOS 
+
+Gr?ficos enlazados al objeto lm, ?tiles en la validaci?n del modelo:
+
+ - Residuos ordinarios frente a valores ajustados
+ - Residuos estandarizados frente a valores ajustados
+ - Q-Q plot sobre normalidad de los residuos
+ - Residuos estandarizados frente a valores "leverage", incluyendo la distancia de Cook (para detecci?n de puntos influyentes).
+
+
+```{r}
+par(mfrow=c(2,2))
+plot(sales2.mod)
+par(mfrow=c(1,1))
+
+plot(predict(sales2.mod), residuals(sales2.mod),xlab="valores ajustados",ylab="residuos")
+plot(predict(sales2.mod), rstudent(sales2.mod),xlab="valores ajustados",ylab="residuos studentizados")
+plot(hatvalues(sales2.mod),main="Valores diagonales de la matriz de predicci?n,leverage")
+which.max(hatvalues(sales2.mod))
+
+```
+
+
+
+###ASPECTOS RELACIONADOS CON EL MODELO DE REGRESI?N M?LTIPLE
+
+ - PREDICCIONES
+ - LINEALIDAD DE LOS DATOS                                                              
+ - CORRELACI?N DE LOS ERRORES (AUTOCORRELACI?N SERIAL)                                  
+ - HETEROCEDASTICIDAD                                                                   
+ - OUTLIERS (VALORES AT?PICOS) DEL MODELO                                               
+ - LEVERAGE (APALANCAMIENTO) O VALORES AT?PICOS EN EL ESPACIO PREDICTOR                 
+ - COLINEALIDAD                                                                         
+
+
+###PREDICCIONES
+
+ Permite predecir con el modelo ajustado sobre un conjunto de datos fijado, con un intervalo de confianza para la media o esperanza de la predicci?n y con el denominado intervalo de predicci?n 
+
+ Orden b?sica:      predict(mod,subdatos, interval="confidence")
+ 
+       - mod es el modelo previamente ajustado con "lm"
+       - subdatos es el conjunto de datos de var. explicativas sobre el que se desEe obtener las predicciones
+       - interval="confidence", o bien, interval="prediction"
+
+PREPARACI?N DEL CONJUNTO DE DATOS SOBRE EL QUE SE PRETENDE PREDECIR:
+
+```{r}
+ltv<-seq(100, 300, by = 50)
+TVp <- rep(ltv,5)
+Radp <- rep(1:5,each=5)*10
+Newsp <- 360 - TVp - Radp
+datpred <- data.frame(TVp,Radp,Newsp)
+colnames(datpred)=c("TV","Radio","Newspaper")
+datpred
+
+```
+
+?RDENES PARA PREDECIR, CON INTERVALO DE CONFIANZA E INTERVALO DE PREDICCI?N
+
+```{r}
+predict(sales2.mod, datpred, interval="confidence")
+predict(sales2.mod, datpred, interval="prediction")
+
+```
+
+?RDENES PARA GUARDAR LAS PREDICCIONES EN OBJETOS:
+
+```{r}
+sales2.conf<-predict(sales2.mod, datpred, interval="confidence")
+sales2.pred<-predict(sales2.mod, datpred, interval="prediction")
+
+```
+
+PRESENTACI?N DE LAS PREDICCIONES
+
+```{r}
+datpred2 <- cbind(datpred,sales2.conf,sales2.pred)
+datpred2
+colnames(datpred2)=c("TV","Radio","Newspaper","Ajust","lwconf","upconf","fit","lwpred","uppred")
+
+```
+
+GR?FICOS DE LAS PREDICCIONES
+
+```{r}
+
+plot(datpred2$Ajust,datpred2$lwconf,pch="-")
+points(datpred2$Ajust,datpred2$upconf,pch="+")
+points(datpred2$Ajust,datpred2$lwpred,pch="l")
+points(datpred2$Ajust,datpred2$uppred,pch="u")
+lines(x=datpred2$Ajust,y=datpred2$Ajust,col="red")
+
+```
+
+
+###ESTUDIO DE LA LINEALIDAD
+
+DIVERSOS PLOTS DE RESIDUOS
+```{r}
+plot(predict(sales2.mod), residuals(sales2.mod),main="Residuos frente a valores ajustados")
+lines(x=predict(sales2.mod),y=0*predict(sales2.mod),col="red")
+grid()
+
+plot(sales2.mod$model[,2], residuals(sales2.mod),main="Residuos frente a Gastos TV")
+lines(x=sales2.mod$model[,2],y=0*predict(sales2.mod),col="red")
+grid()
+
+plot(sales2.mod$model[,3], residuals(sales2.mod),main="Residuos frente a Gastos Radio")
+grid()
+plot(sales2.mod$model[,4], residuals(sales2.mod),main="Residuos frente a Gastos Newapaper")
+grid()
+
+```
+
+
+
+
+###CORRELACI?N ENTRE LOS ERRORES  
+
+DIVERSOS PLOTS
+
+
+
+```{r}
+plot(residuals(sales2.mod),main="Index plot de Residuos", type="l",xlim=c(0,50))
+grid()
+plot(residuals(sales2.mod),main="Index plot de Residuos", type="l",xlim=c(50,100))
+grid()
+
+plot(residuals(sales2.mod),main="Index plot de Residuos", type="l",xlim=c(100,150))
+grid()
+
+plot(residuals(sales2.mod),main="Index plot de Residuos", type="l",xlim=c(150,200))
+grid()
+
+```
+
+
+
+
+
+###HETEROCEDASTICIDAD
+DIVERSOS PLOTS
+
+
+```{r}
+plot(predict(sales2.mod), residuals(sales2.mod), main="PLOT DE RESIDUOS FRENTE A VALORES AJUSTADOS")
+plot(sales2.mod$model[,2], residuals(sales2.mod),main="Residuos frente a Gastos TV")
+plot(sales2.mod$model[,3], residuals(sales2.mod),main="Residuos frente a Gastos Radio")
+plot(sales2.mod$model[,4], residuals(sales2.mod),main="Residuos frente a Gastos Newapaper")
+
+```
+
+
+cONTRASTRE DE HIP?TESIS SOBRE LA IGUALDAD DE VARIANZAS (necesario cargar la librer?a "car")
+
+```{r}
+library(car)
+ncvTest(sales2.mod)
+
+```
+
+
+
+Plot residuos studentizados frente a valores ajustados. 
+
+Si los valores ajustados son todos positivos, se puede usar este tipo de plot conocido como "spread-level plot" ("dispersi?n-nivel") que representa:
+
+ - Eje vertical: log |resid. studentizado| "log-spread"
+ - Eje horizontal : log |valor ajustado |  "log-level"
+
+La pendiente b del ajuste de minimos cuadrados del plot sugiere la transformaci?n Para estabilizar la varianza : 
+
+    Transformaci?n: Y elevado a p, con p=1-b
+
+```{r}
+spreadLevelPlot(sales2.mod)
+
+```
+
+
+
+
+###OUTLIERS (VALORES AT?PICOS) DEL MODELO 
+ 
+La orden "rstudent(modeloajustado)" proporciona los residuos studentizados del modelo, que se pueden representar gr?ficamente
+```{r}
+rstudent(sales2.mod)
+plot(predict(sales2.mod), abs(rstudent(sales2.mod)),pch=19, main="Residuos studentizados frente a val. ajustados")
+grid()
+lines(x=predict(sales2.mod),y=c(rep(3,200)),col="red")
+text( predict(sales2.mod), abs(rstudent(sales2.mod)), row.names(datos), cex=0.7, pos=3, col="black")
+
+plot(abs(rstudent(sales2.mod)), pch=19, main="Index plot de Residuos Studentizados" )
+grid()
+lines(x=seq(1:200),y=c(rep(3,200)),col="red")
+text( seq(1:200), abs(rstudent(sales2.mod)), row.names(datos), cex=0.7, pos=3, col="black")
+
+which.max(abs(rstudent(sales2.mod)))
+which.max(abs(rstudent(sales2.mod))>3)
+
+```
+
+
+
+###LEVERAGE (APALANCAMIENTO) O VALORES AT?PICOS EN EL ESPACIO PREDICTOR
+
+La orden hatvalues(modeloajustado)" proporciona los elementos diagonales de la "Hat matrix" del modelo, tambien conocidos como valores "leverage", que permiten detectar casos leverage 
+o "puntos de apalancamiento", que se pueden representar gr?ficamente
+ 
+ 
+```{r}
+hatvalues(sales2.mod)
+plot(hatvalues(sales2.mod),main="Index plot de valores leverage",pch=19 )
+grid()
+
+which.max(hatvalues(sales2.mod))
+hatcrit=2*sales2.mod$rank/(sales2.mod$df.residual+sales2.mod$rank)
+hatcrit
+lines(x=c(seq(1:200)),y=c(rep(hatcrit,200)),col="red")
+text( seq(1:200), hatvalues(sales2.mod), row.names(datos), cex=0.7, pos=3, col="black")
+which.max(hatvalues(sales2.mod)>hatcrit)
+```
+
+
+
+
+###COLINEALIDAD 
+
+Factor de infl?aci?n de la varianza: VIF
+
+En la librer?a "car", orden: vif(modelo)
+
+```{r}
+
+
+vif(sales2.mod)
+vif(sales2.mod)[1]
+
+1-(1/vif(sales2.mod)[1])  # Cuadrado del Coef. Correlaci?n M?ltiple de TV respecto al resto de expl.
+1-(1/vif(sales2.mod)[2])  # Cuadrado del Coef. Correlaci?n M?ltiple de TV respecto al resto de expl.
+1-(1/vif(sales2.mod)[3])  # Cuadrado del Coef. Correlaci?n M?ltiple de TV respecto al resto de expl.
+
+
+```
+
+
+
+###TRANSFORMACI?N SUGERIDA POR "spread-level plot
+
+Transformaci?n:  y^p : p=1-b  ; p=1.499852
+
+```{r}
+rsales <- (datos$Sales)^1.5
+names(datos)
+sales3.mod <- lm(rsales~TV+Radio+Newspaper,data=datos)
+summary(sales3.mod)
+summary(sales2.mod)
+
+ncvTest(sales3.mod) #Test sobre la igualdad de varianzas
+spreadLevelPlot(sales3.mod)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
