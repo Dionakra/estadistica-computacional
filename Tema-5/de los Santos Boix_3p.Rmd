@@ -1,0 +1,158 @@
+---
+title: "Tema 4-5. Trabajo Práctico"
+author: "David de los Santos Boix"
+date: "24 de Abril de 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Problema 1 Fichero de datos: airquality  
+Estos datos miden la calidad del aire en unas fechas determinadas.  
+1. Ozone: nivel de ozono.  
+2. Solar.R: Radiaciones solares. Medidas en frecuencia de banda 4000-7700 Angstroms.  
+3. Wind: Velocidad del viento, en miles por hora.  
+4. Temp: Temperatura máxima en grados Fahrenheit.  
+5. Fuente datos: New York State Department of Conservation (ozone data) and the National Weather Service (meteorological data).  
+6. Objetivo: Predecir el nivel de ozono en función la radiación solar, viento y temperatura.   
+
+#### 1. Lectura datos y estructura del fichero
+```{r}
+library(faraway)
+
+data(airquality)
+names(airquality)
+
+# Modificación del fichero de datos para eliminar los valores NA
+datos = airquality[complete.cases(airquality),]
+dim(datos)
+```
+
+#### 2. Escribir la ecuación del modelo de regresión estimado.
+```{r}
+attach(datos)
+regre <- lm(Ozone~Solar.R+Wind+Temp)
+summary(regre)
+```
+$$
+Ozone = -64.34208*0.05982*Solar.R - 3.33359*Wind + 1.65209*Temp
+$$
+
+#### 3. Realizar el contraste fundamental de la regresión para el modelo ajustado, indicando el planteamiento del contraste, valor del estadístico, p-valor y conclusión
+$$
+\begin{array}{rl}
+H_0: & \beta_1 = \beta_2 = \beta_3 = 0 \\
+H_1: & \beta_i \neq 0 \\
+R^2: & 0.6059 \\
+P-value: & 2.2\times 10^{-6}
+\end{array}]
+$$
+1. Como $P-value<alfa$, existen evidencias significativas para rechazar la hipótesis nula, por lo tanto, "aceptamos" la hipótesis alternativa, es decir, existe relación lineal significativa entre todas las variables explicativas y la variable $Ozone$.  
+2. Siendo $R^2=0.6059$, podemos decir que es un modelo aceptable.
+
+#### 4. Calcular el intervalo de confianza para el coeficiente asociado a la variable "Wind". ¿Existe relación lineal significativa de esta variable con la variable Ozono?
+```{r}
+confint(regre) 
+```
+$Wind[2.5\%, 97.5\%] = [0.01385613, 0.1057851]$
+Sí, existe relación lineal significativa dado que el valor beta es diferente de $0$, además está demostrado en el punto anterior que esa relación se da para todas las variables explicativas, siendo $Wind$ una de ellas.   
+
+#### 5. ¿Se verifica la hipótesis de Normalidad? Justificar el resultado mediante un contraste de hipótesis
+```{r}
+shapiro.test(regre$residuals)
+```
+$$
+\begin{array}{rl}
+H_0: & \mu_x=\mu_y \\
+H_1: & \mu_x \neq \mu_y \\
+P-value: & 3.618\times 10^{-6}
+\end{array}]
+$$
+Como podemos observar, $p<alfa$, por lo que existen evidencias significativas para rechazar la hipótesis nula, por lo tanto, "aceptamos" la hipótesis alternativa, es decir, no se verifica la hipótesis de normalidad.  
+
+#### 6. Comprobar la hipótesis de homocedasticidad del modelo. Indicar la transformación adecuada para verificar esta hipótesis si fuera necesario.
+```{r}
+library(car)
+ncvTest(regre)
+```
+$$
+\begin{array}{rl}
+H_0: & V_x = V_y \\
+H_1: & V_x \neq V_y \\
+P-value: & 0.0204226
+\end{array}]
+$$
+Como podemos observar, $p<alfa$, por lo que existen evidencias significativas para rechazar la hipótesis nula, por lo tanto, "aceptamos" la hipótesis alternativa, es decir, el modelo no verifica la hipótesis de homocedasticidad.   
+
+#### 7. Estimar el nivel d Ozono en un día donde las variables restantes tomen valores medios. Obtener intervalos de Confianza y Predicción. ¿Es fiable la predicción obtenida?
+```{r}
+#Solar.R+Wind+Temp
+predict(regre,newdata=data.frame(Solar.R=mean(Solar.R),Wind=mean(Wind),Temp=mean(Temp)))
+predict(regre,newdata=data.frame(Solar.R=mean(Solar.R),Wind=mean(Wind),Temp=mean(Temp)),interval= "confidence")
+predict(regre,newdata=data.frame(Solar.R=mean(Solar.R),Wind=mean(Wind),Temp=mean(Temp)),interval="prediction")
+```
+$$
+\begin{array}{rl}
+Nivel\ de\ Ozono: & 42.0991 \\
+Confianza: & [38.1374, 46.08440] \\
+Predicción: & [-0.07798201, 84.27618] \\
+\end{array}]
+$$
+La predicción obtenida es bastante mala. Si bien el valor $fit$ parece correcto, el intervalo respecto al de confianza es mucho más abierto, demasiado. Por tanto, la predicción obtenida no es fiable.
+
+### Problema 2 Fichero de datos: seishu.txt
+1. Objetivo: Reducir la dimensión del problema.  
+   
+LECTURA DE DATOS  
+Los datos corresponden a 30 marcas de vino Seishu. La variable Sake es el llamado "Sake Meter Value", cuanto más alto positivo, más seco, cuanto más negativo, más dulce
+```{r}
+datos <- read.table("Seishu.txt", header=F)
+colnames(datos)<-c("Sabor", "Olor", "Ph", "Acidez1", "Acidez2", "Sake", "Azucar_reducido", "Azucar_Total", "Alcohol", "Formyl-Nitrog.")
+names(datos)
+```
+   
+Realizar un análisis para cumplir el objetivo planteado y contestar a las siguientes preguntas:
+
+#### 1. Indicar el número de componentes seleccionadas, justificando la respuesta.
+```{r}
+#Matriz de Correlación
+Restim<-round(cor(datos),2)
+eigen(Restim)$values
+```
+$4$ variables, dado que la regla de $Kayser$ nos dice que escojamos tantas componentes como autovalores mayores que $1$ existan. En este caso, sólo hay $4$ de ellos que superen el valor unidad.
+
+#### 2. Indicar el porcentaje de varianza estimado por cada componente, así como el Porcentaje de varianza total.
+```{r}
+cp = princomp(~., data=data.frame(datos), cor=T)
+summary(cp)
+```
+
+$$
+\begin{array}{rl}
+Y_1: & 31.74\% \\
+Y_2: & 25.65\% \\
+Y_3: & 14.32\% \\
+Y_4: & 12.77\% \\
+Total: & 84.48\%
+\end{array}]
+$$
+
+#### 3. Indicar la correlación ente las variables originales y las nuevas componentes. Interpretación
+```{r}
+C=cor(datos,cp$scores)
+C
+```
+$$
+\begin{array}{rl}
+Y_1: & -ph -Acidez2 - (FormylNitrog) \\
+Y_2: & -Sake + AzucarReducido + AzucarTotal + Alcohol \\
+Y_3: & +Sabor + Olor \\
+Y_4: & +Acidez1
+\end{array}]
+$$
+
+$Y_1:$ Vinos con bajos niveles de Ph, Acidez2 y FormylNitrog   
+$Y_2:$ Vinos con bajos niveles de Sake y altos en azúcares y alcohol   
+$Y_3:$ Vinos olorosos y sabrosos (valores altos)   
+$Y_4$: Vinos ácidos de tipo 1  

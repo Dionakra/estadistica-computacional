@@ -9,12 +9,6 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-$$
-Max\quad \sum_{i=1}^7 x_i
-$$
-
-
-
 ## Ejercicio Decathlon previo examen
 Vamos a hacer un análisis de componentes principales para eliminar variables perdiendo la menor información posible. Lo que se hace es mantener en la medida de lo posible la matriz de covarianzas para que la pérdida de información sea la mínima posible.
 ```{r}
