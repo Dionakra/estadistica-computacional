@@ -1,0 +1,121 @@
+---
+title: "Ejemplo complementario"
+output: html_document
+---
+
+## ESTADÍSTICA COMPUTACIONAL
+
+##Tema 6.- Análisis de Conglomerados
+
+
+
+Datos: MUNDODES.xlx
+Este conjunto de datos consta de 91 observaciones y 6 variables. 
+Las observaciones corresponden a 91 paÃ­ses. 
+Las variables son indicadores de desarrollo. Las seis variables son :
+
+  - TasaNat.:Ratio de natalidad por 1000 habitantes
+ 
+  - TasaMort:Ratio de mortalidad por 1000 habitantes
+  
+  - MortInf:Mortalidad infantil (por debajo de un aÃ±o)
+  - EspHom:Esperanza de vida en hombres 
+  
+  - EspMuj.:Esperanza de vida en mujeres 
+  
+  - PNB:Producto Nacional Bruto per cÃ¡pita
+  
+  Fuente: "UNESCO 1990 Demographic Year Book" y "The Annual Register 1992".
+
+
+```{r}
+datos <- read.table("mundodes.csv", header=TRUE, sep=";",row.names="PAIS")
+library(readr)
+mundodes <- read_delim("~/EC/datos/mundodes.csv", 
+    ";", escape_double = FALSE, trim_ws = TRUE)
+
+```
+
+Cálculo matriz de distancia, usando distancia euclidea y función daisy
+
+```{r}
+
+```
+
+
+
+Agrupamiento jerárquico "hclust"
+ 
+
+```{r}
+
+
+```
+
+
+
+Corte en 5 grupos, vemos los países que pertenecen a cada grupo
+
+```{r}
+
+
+```
+
+Agrupamiento jerárquico "agnes"
+
+
+```{r}
+
+```
+
+Téccnicas de partición:k-Means (5 grupos)
+ 
+ 
+```{r}
+
+
+```
+
+Vector de n componentes indicando el cluster al que se asigna  cada punto
+
+```{r}
+
+```
+
+Matriz de los centros de los clusters 
+
+```{r}
+
+```
+
+Suma de cuadrados total
+
+```{r}
+
+```
+
+
+
+Número de puntos en cada cluster
+
+```{r}
+
+```
+
+
+Para cada país nos da el cluster asignado y los centros de ese grupo
+
+```{r}
+
+```
+
+
+Representaciones gráficas
+
+```{r}
+
+
+```
+
+
+

@@ -1,0 +1,168 @@
+---
+output: html_document
+---
+## Estadística Computacional
+
+
+#Laboratorio II: Análisis de Conglomerados
+  
+#Ejemplo 1: Fichero "agriculture"
+
+Producto Nacional Bruto (GNP) per capita y porcentaje de la población que trabaja 
+en la agricultura para cada pais de la Unión Europea en 1993
+
+
+
+```{r}
+library(cluster)
+data(agriculture)
+names(agriculture)
+agriculture
+plot(agriculture)
+text( agriculture, row.names(agriculture), cex=1.2, pos=3, col="blue")
+grid()
+D <- dist(agriculture,diag=TRUE)
+print(round(D,2))
+
+```
+
+
+#Función hclust:  Método de conglomeración vecino más cercano
+
+```{r}
+conglomerado = hclust(D,method="single")
+plot(conglomerado)
+```
+
+#Función agnes (incluye coef. de aglomeración)
+
+```{r}
+agnclus = agnes(x=agriculture,metric="manhattan",stand=TRUE)
+summary(agnclus)
+plot(agnclus)
+rect.hclust(agnclus,k=2)
+cutree(agnclus,k=2)
+```
+
+#Método de Partición: k-medias (kmeans)
+
+```{r}
+# EMPEZAMOS AQUÍ, MANGURRIÁN
+# Primer parámetro matriz de datos, segundo parámetro el número K, es decir, el número de conglomerados
+agric.k = kmeans(agriculture,2)
+agric.k
+#centros de los clusters
+agric.k$centers
+#Vector de n componentes indicando el cluster al que se asigna  cada punto
+agric.k$cluster
+#N?mero de puntos en cada cluster  
+agric.k$size
+
+cbind(agric.k[c("betweenss","tot.withinss","totss")])
+
+```
+
+
+Para cada país nos da el cluster asignado y los centros de ese grupo
+```{r}
+
+fitted(agric.k)
+```
+
+Representaciones gráfica
+
+```{r}
+#colnames(agriculture) = c("GNP","P.Agric")
+#plot(agriculture,col=agric.k$cluster)
+#points(agric.k$centers,col=1:2,pch=8,cex=2)
+
+plot(agriculture,col=c(1,2)[agric.k$cluster],pch=19)
+legend("bottomleft",legend=c("Grupo 1","Grupo 2"), pch=19, col=c(1,2),cex=1)
+points(agric.k$centers,col=1:2,pch=8,cex=2)
+```
+
+#Método de Partición: K-medioides (pam) con K=2
+
+Algoritmo de "K-medioides": (Implementado en la función pam de la librería cluster).
+Se buscan k puntos representativos de k conglomerados, llamados medioides, de modo que la suma de las distancias de los puntos a su medioide más cercano sea mínima
+
+```{r}
+# A diferencia del K medias, los puntos pertenecen al conjunto de datos, no es un centro "geométrico", son casos dentro de nuestro conjunto de datos. ¿Cómo se eligen? La suma de las distancias a su medioide sea mínima
+agric.pam = pam(agriculture,2)
+summary(agric.pam) # Da los dos medioides, que son D y P, paises 3 y 11, con esos valores X e Y
+# En Size, numero de paises por cada conglomerado. Max_diss, distancia máxima entre los conglomerados del grupo. av_diss, distancia media, diameter pues diámetro del cluster, máxima distancia entre dos casos de ese cluster, y separación es
+
+# Silueta, eso que es, la primera columna es la etiqueta de los paises, la segunda en que cluster está, la tercera es el vecino más cercano (cluster), y la última es la silueta, que corresponde a la anchura media de ese cluster, que nos indica la bondad de la clasificación de cada uno de los países. En el Cluster 2 el peor es españa, entre 0 y 1 como siempre. El mejor clasificado es el medioide
+silhouette(agric.pam) 
+
+plot(agriculture,type="n")
+text(agriculture,labels=row.names(agriculture),col="red")
+points(agric.pam$medoids,col="blue",lwd=5)  #marca los medioides
+
+plot(agric.pam)
+
+```
+
+
+#Método de Partición: K-medioides (pam) con K=3
+
+```{r}
+# Cuando usamos bases de datos enormes como big data, el pam de k-medioides es lentico, hay una alternativa a pam que es la funcion clara. Lo que hace es un muestreo del conjunto de datos y llama a pam, utilizando diferentes subconjuntos, y se queda con los mejores
+agric3.pam = pam(agriculture,3)
+summary(agric3.pam)
+
+plot(agriculture,type="n")
+text(agriculture,labels=row.names(agriculture),col="red")
+points(agric3.pam$medoids,col="blue",lwd=5)  #marca los medioides
+
+
+plot(agric3.pam)
+
+```
+
+
+
+#Función clara
+
+Para n grande, pam puede ser inviable al tener que almacenar la matriz de distancias completa.
+
+La función clara trabaja con la matriz de casos y variables, y se queda con la mejor partición tras seleccionar aleatoriamente un número de muestras igual al parámetro samples, de tamaño sampsize.
+
+
+
+```{r}
+# K=2
+cl = clara(agriculture,2)
+plot(cl)
+
+# K=3
+cl3 = clara(agriculture,3)
+plot(cl3)
+
+```
+
+Datos xclara
+A data frame with 3000 observations on 2 numeric variables giving the x and y coordinates of the points, respectively. 
+
+3 well-separated clusters of size 1000 each
+
+```{r}
+data(xclara)
+str(xclara)
+head(xclara)
+
+x1 = pam(xclara,3)
+x1$silinfo
+
+
+clx2 <- clara(xclara, 3)
+clx2$silinfo
+plot(clx2)
+
+
+
+```
+
+
+
+

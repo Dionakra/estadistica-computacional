@@ -1,0 +1,140 @@
+
+---
+title: "TEMA 7. CLASIFICACIÓN Y DISCRIMINACION.(4)"
+output: html_document
+---
+
+
+
+## ESTADÍSTICA COMPUTACIONAL
+
+**GRADO EN INGENIERÍA INFORMÁTICA-INGENIERÍA DEL SOFTWARE**
+
+**GRADO EN INGENIERÍA INFORMÁTICA- TECNOLOGÍAS INFORMÁTICAS**
+
+**Juan M. Muñoz Pichardo - María Dolores Cubiles de la Vega**
+
+**Departamento de Estadística e I.O. Universidad de Sevilla**
+
+____________________________________________________________________
+
+Datos: iris
+This famous (Fisher's or Anderson's) iris data set gives the measurements in centimeters of the variables sepal length and width and petal length and width, respectively, for 50 flowers from each of 3 species of iris. The species are Iris setosa, versicolor, and virginica.
+
+Iris is a data frame with 150 cases (rows) and 5 variables (columns) named Sepal.Length, Sepal.Width, Petal.Length, Petal.Width, and Species
+
+
+##LECTURA FICHERO DE DATOS
+
+```{r}
+
+library(graphics)
+library(MASS)
+
+data(iris)
+datos = iris
+names(datos)
+dim(datos)
+head(datos)
+
+```
+
+1. Representación gráfica de los datos
+```{r}
+# Diferencia entre esto y conglomerado, esta es supervisado, la otra no. Esto se engloba dentro del Machine Learning
+
+plot(datos[,-5],col=as.factor(datos[,5]), pch=19)
+plot(datos$Sepal.Length,datos$Sepal.Width,col=as.factor(datos[,5]), pch=19)
+legend("bottomright",legend=levels(datos$Species),col=c(1,2,3,4,5),pch=c(19,19,19,19,19))
+
+plot(datos[,-5],col=as.factor(datos[,5]), pch=19)
+plot(datos$Sepal.Length,datos$Petal.Length,col=as.factor(datos[,5]), pch=19)
+legend("bottomright",legend=levels(datos$Species),col=c(1,2,3,4,5),pch=c(19,19,19,19,19))
+
+plot(datos[,-5],col=as.factor(datos[,5]), pch=19)
+plot(datos$Sepal.Width,datos$Petal.Width,col=as.factor(datos[,5]), pch=19)
+legend("bottomright",legend=levels(datos$Species),col=c(1,2,3,4,5),pch=c(19,19,19,19,19))
+
+
+
+# Conjunto de entrenamiento y test
+set.seed(1)
+n=nrow(datos)
+train=sample(1:n, floor(n*0.7))
+test = setdiff(1:n, train)
+```
+
+2. Realizar un análisis discrimiante sobre el conjunto de datos original al completo.
+```{r}
+datos.lda=lda(datos[,c(1,2,3,4)],grouping=datos[,5])
+```
+
+
+3. Obtener las probabilidades a priori establecidas para cada grupo de clasificación
+```{r}
+datos.lda$prior
+```
+
+4. ¿Cuántos elementos hay en cada grupo? ¿Cuáles son los grupos?
+```{r}
+datos.lda$counts
+datos.lda$lev
+```
+
+5. Calcular las medias de cada variable en los tres grupos.
+```{r}
+datos.lda$means
+```
+
+6. Indicar los valores de las funciones discriminantes obtenidas.
+```{r}
+# N Grupos, N-1 funciones discriminantes
+datos.lda$scaling
+```
+
+7. Obtener los resultados de la clasificación con el método de validación cruzada.
+```{r}
+datos.ldaCV=lda(datos[,c(1,2,3,4)],grouping=datos[,5],CV=TRUE)
+```
+
+8. Calcular las probabilidades a posteriori para los 10 primeros casos y la clase en la que se ha clasificado
+```{r}
+datos.ldaCV$class
+datos.ldaCV$posterior[1:10,]
+datos.ldaCV$posterior[54,]
+datos.ldaCV$class[54]
+```
+
+9. Con objeto de validar la regla discriminante obtenida, construir la Tabla de clasificación correctos / incorrectos para todos los casos incluidos en el conjunto de datos.
+```{r}
+ct <- table(datos$Species, datos.ldaCV$class)
+```
+
+10. Con la tabla del apartado anterior, indicar el porcentaje correcto por grupos y porcentaje total.
+```{r}
+diag(prop.table(ct, 1))*100
+sum(diag(prop.table(ct)))*100
+```
+
+11. Aplicar la regla discriminante obtenida para clasificar un nuevo caso, con los siguientes valores: Sepal.Length = 5, Sepal.Width = 4.1, Petal.Length = 2, Petal.Width = 0.1. Indicar a que grupo pertenece el nuevo caso, así como la probabilidad de pertenencia asignada a ese grupo.
+```{r}
+test=c(5, 4.1, 2, 0.1)
+prediccion = predict(datos.lda,test)  # Si hubieramos separado, se hace sobre el conjunto test
+prediccion$class
+prediccion$posterior
+```
+
+12. Representar gráficamente todos los datos mediante las funciones discriminantes obtenidas
+```{r}
+datos.pred <- predict(datos.lda,datos[,1:4])
+names(datos.pred)
+plot(datos.pred$x[,1],datos.pred$x[,2],col=as.factor(datos$Species),xlab="LD1",ylab="LD2")
+legend("bottomright",legend=levels(datos$Species),col=c(1,2,3,4,5),pch=c(19,19,19,19, 19))
+
+
+
+
+# Hacer lo mismo con enzyme.dat, entero, pero con cambios.
+# 2. Trabajamos con un 70% para el entrenamiento y 30% para el test. Aleatorio
+# Quitar lo de validación cruzada y hacer todo con ese modelo.
+```

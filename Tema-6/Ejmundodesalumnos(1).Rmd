@@ -1,0 +1,159 @@
+---
+title: "Ejemplo complementario"
+output: html_document
+---
+
+## ESTADÍSTICA COMPUTACIONAL
+
+##Tema 6.- Análisis de Conglomerados
+
+
+
+Datos: MUNDODES.xlx
+Este conjunto de datos consta de 91 observaciones y 6 variables. 
+Las observaciones corresponden a 91 paÃ­ses. 
+Las variables son indicadores de desarrollo. Las seis variables son :
+
+  - TasaNat.:Ratio de natalidad por 1000 habitantes
+ 
+  - TasaMort:Ratio de mortalidad por 1000 habitantes
+  
+  - MortInf:Mortalidad infantil (por debajo de un aÃ±o)
+  - EspHom:Esperanza de vida en hombres 
+  
+  - EspMuj.:Esperanza de vida en mujeres 
+  
+  - PNB:Producto Nacional Bruto per cÃ¡pita
+  
+  Fuente: "UNESCO 1990 Demographic Year Book" y "The Annual Register 1992".
+
+1. Lectura del fichero de datos, lo guardamos en un dataframe denominado "datos".
+
+```{r}
+library(cluster)
+datos <- read.table("~/EC/datos/mundodes.csv", header=TRUE, sep=";",row.names="PAIS")
+```
+
+2. Algoritmos jeráquicos
+
+Cálculo matriz de distancia, usando distancia euclidea y función daisy
+
+```{r}
+D = daisy(datos, metric="euclidean") # Stand = T estandariza
+print(round(D,2))
+
+```
+
+
+
+Agrupamiento jerárquico "hclust". Interpretación.
+ 
+
+```{r}
+agr1 <-  hclust(D, method = "complete") # Hay que ir probando alternativas hasta encontrar uno que nos agrupe bien los casos que estamos estudiando. Dendogramas que se vayan enlazando, es decir, muchas subdivisiones anidadas son basura. Lo único que se puede hacer es ver el dendograma, que, al observar, podamos separar distintos grupos, nada de anidaciones ni leches.
+agr1$height # Peso, distancia de agrupación, ordenadas de los distintos países, de menor a mayor
+agr1$merge # Historial de conglomeración, es decir, me da un listado donde me dice, por ejemplo, con n=12, va por etapas, país 1 con pais 10, país 2 con país 9, país 3 con 1, este uno tiene signo positivo porque ya ha aparecido antes, que el 1 ya no es el 1, dado que el 1 y el 10 se han unido en un conglomerado. En la tercera etapa dice que el país 3 se une con el 1, pero el 1 es el conglomerado de 1 y 10, es decir, el 3 se une a ese conglomerado. Cuarta etapa 6 con 8, 5 con 7, 12 con 3, que estaba en el conglomerado de 1, 10 y 3, por lo que el 12 se mete en ese conglomerado, así hasta llegar a la etapa n-1
+agr1$dist.method
+
+```
+
+
+
+Corte en 5 grupos, vemos los países que pertenecen a cada grupo
+
+```{r}
+plot(agr1,main="Dendrograma")
+rect.hclust(agr1, k=5,border="red") 
+cong.pertenencia <- cutree(agr1, k = 5) # cluster de cada caso para k clusters
+cong.pertenencia
+
+rownames(datos)[cong.pertenencia == 1]
+
+```
+
+Agrupamiento jerárquico "agnes". Interpretación.
+```{r}
+agnclus <- agnes(datos, metric = "manhattan", stand = TRUE)
+str(agnclus)
+summary(agnclus) # 1 con 10 se une con distancia 0.4088, el 2 con el 9 con 0.977 etc...
+agnclus$method
+agnclus$ac # Coeficiente de aglomeración, sirve para evaluar la clasificación que estamos haciendo. Es una medida del ajuste de esa clasificación que hemos hecho, de forma que siempre estará entre 0 y 1. A medida que el coeficiente se acerque al valor 1, mejor es la clasificación que hemos obtenido. Cuanto más cercano esté del valor cero, peor será la clasificación que hemos hecho, es decir, es una forma de medir el análisis que acabamos de realizar. ¿Cómo es nuestra clasificación? Buena, 0.8 valor bueno, 
+```
+
+3. Técnicas de partición:k-Means (5 grupos)
+ 
+ 
+```{r}
+# EMPEZAMOS AQUÍ, MANGURRIÁN
+# Primer parámetro matriz de datos, segundo parámetro el número K, es decir, el número de conglomerados
+agric.k = kmeans(datos,5)
+agric.k
+cbind(agric.k[c("betweenss","tot.withinss","totss")])
+
+```
+
+Vector de n componentes indicando el cluster al que se asigna  cada punto
+
+```{r}
+#Vector de n componentes indicando el cluster al que se asigna  cada punto
+agric.k$cluster
+```
+
+Matriz de los centros de los clusters 
+
+```{r}
+#centros de los clusters
+agric.k$centers
+
+```
+
+
+
+Número de puntos en cada cluster
+
+```{r}
+#N?mero de puntos en cada cluster  
+agric.k$size
+```
+
+
+Para cada país nos da el cluster asignado y los centros de ese grupo
+
+```{r}
+fitted(agric.k)
+```
+
+
+Representaciones gráficas 
+
+```{r}
+plot(datos,col=c(1,2)[agric.k$cluster],pch=19)
+legend("bottomleft",legend=c("Grupo 1","Grupo 2"), pch=19, col=c(1,2),cex=1)
+points(agric.k$centers,col=1:2,pch=8,cex=2)
+
+```
+
+4. Método de partición basado en medioides con 5 grupos. Obtener todos los resultados numéricos y gráficos. Interpretación. 
+
+
+```{r}
+# AGNES mejor que hclust
+# A diferencia del K medias, los puntos pertenecen al conjunto de datos, no es un centro "geométrico", son casos dentro de nuestro conjunto de datos. ¿Cómo se eligen? La suma de las distancias a su medioide sea mínima. Mejor que el k-medias
+agric.pam = pam(datos,5)
+summary(agric.pam) # Da los dos medioides, que son D y P, paises 3 y 11, con esos valores X e Y
+# En Size, numero de paises por cada conglomerado. Max_diss, distancia máxima entre los conglomerados del grupo. av_diss, distancia media, diameter pues diámetro del cluster, máxima distancia entre dos casos de ese cluster, y separación es
+
+# Silueta, eso que es, la primera columna es la etiqueta de los paises, la segunda en que cluster está, la tercera es el vecino más cercano (cluster), y la última es la silueta, que corresponde a la anchura media de ese cluster, que nos indica la bondad de la clasificación de cada uno de los países. En el Cluster 2 el peor es españa, entre 0 y 1 como siempre. El mejor clasificado es el medioide
+silhouette(agric.pam) 
+
+plot(datos,type="n")
+text(datos,labels=row.names(datos),col="red")
+points(agric.pam$medoids,col="blue",lwd=5)  #marca los medioides
+
+plot(agric.pam)
+
+# Para gráficos, hacer análisis de componentes principales, te quedas dos componentes y haces el plot con esas dos variables
+
+
+```
+

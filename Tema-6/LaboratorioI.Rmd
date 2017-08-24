@@ -1,0 +1,313 @@
+---
+output: html_document
+---
+
+
+
+##Estadística Computacional
+
+#Laboratorio I: Análisis de Conglomerados
+
+#Ejemplo 1: Fichero "agriculture"
+
+Producto Nacional Bruto (GNP) per capita y porcentaje de la población que trabaja 
+en la agricultura para cada pais de la Unión Europea en 1993
+
+```{r}
+library(cluster)
+data(agriculture)
+names(agriculture)
+agriculture
+plot(agriculture)
+text( agriculture, row.names(agriculture), cex=1.2, pos=3, col="blue")
+grid()
+
+```
+
+Cálculo de la matriz de distancias o disimilaridades
+
+dist(datos, method = "euclidean", p = 2, diag = FALSE, upper = FALSE)
+
+datos  : matriz de datos
+
+method : distancia que se va a usar. Puede ser: "euclidean", "maximum",                    "manhattan", "canberra", "binary" or "minkowski".
+
+p      : Exponente de la distancia de Minkowski
+
+diag   : Lógico. Indica si proporciona la diagonal de la matriz de distancias 
+           a través de la orden "print.dist"
+           
+upper  : Lógico. Indica si proporciona la diagonal de la matriz de distancias 
+           a través de la orden "print.dist"
+
+
+```{r}
+D <- dist(agriculture)
+print(round(D,2))
+
+# Daisy vs dist
+# Daisy se puede usar en ciertos casos que dist no puede. Por ejemplo, la función dist únicamente acepta variables numéricas. Pero si hay más tipos (binarias, carácter y demás, que es lo usual), entonces tenemos que utilizar daisy, pero con una distancia concreta, que no es otra que la de gower, que es la que tenemos que usar esta sí o sí. No te vale otra distancia que ya tiene la dist
+```
+
+
+#Agrupamiento jerárquico "hclust" 
+ 
+hclust(d, method = "complete")
+      
+  d     : matriz de disimilaridad creada por "dist" 
+  
+ method : método de agrupación. Debe ser uno de los siguientes:
+          "ward" - Método de Ward, 
+          "single" - Unión simple o vecino más cercano 
+          "complete" - Unión completa o vecino más lejano, 
+          "average" - Unión media de grupo no ponderada (UPGMA), (media de                               distancias entre casos de un grupo y otro)
+          "median"  - Método de la mediana
+          "centroid" - Método del centroide
+          "mcquitty" - Método de McQuitty correspondiente a unión media                    ponderada  como semi-suma de las distancias entre clusters en la                        etapa anterior.
+         
+
+```{r}
+# La función hclust funciona con la matriz de distancias, no la de datos!!!!
+agr1 <-  hclust(D, method = "ward.D")
+agr1
+str(agr1)
+agr1$labels
+agr1$height # Peso, distancia de agrupación, ordenadas de los distintos países, de menor a mayor
+agr1$merge # Historial de conglomeración, es decir, me da un listado donde me dice, por ejemplo, con n=12, va por etapas, país 1 con pais 10, país 2 con país 9, país 3 con 1, este uno tiene signo positivo porque ya ha aparecido antes, que el 1 ya no es el 1, dado que el 1 y el 10 se han unido en un conglomerado. En la tercera etapa dice que el país 3 se une con el 1, pero el 1 es el conglomerado de 1 y 10, es decir, el 3 se une a ese conglomerado. Cuarta etapa 6 con 8, 5 con 7, 12 con 3, que estaba en el conglomerado de 1, 10 y 3, por lo que el 12 se mete en ese conglomerado, así hasta llegar a la etapa n-1
+agr1$dist.method
+
+plot(agr1,main="Dendrograma de paises de la UE")
+# Tenemos dos métodos de conglomerado, tenemos los jerárquicos (aglomerativos y divisivos) y los de partición que, dentro de él, el k-medias
+# Este tipo de conglomerado con hclust entra dentro de los métodos jerárquicos aglomerativos, es decir, en cada etapa unimos los conglomerados con distancia más pequeña, siendo cada elemento un conglomerado al inicio. Así hasta la penúltima etapa, con 2 conglomerados, y en la última tenemos un solo conglomerado con N elementos dentro. Los divisivos es al revés, empiezan en un único conglomerado hasta dividirse en n grupos, cada uno con un elemento dentro. El objetivo no es llegar al final, hacemos un corte en k <= n, donde tendremos k grupos, depende de lo que nos interese.
+# todos los métodos jerárquicos me van a resultar k grupos, según me interese.
+# En el caso de los de partición, el número de grupos K lo tenemos que definir de antemano. En los jerárquicos no sabemos los K grupos que vamos a obtener ni el número de grupos, pero en los de partición, k-medias o k-medioides, ese K se lo tenemos que dar al algoritmo antes de empezar
+
+agr2 <-  hclust(D, method = "complete")
+agr2
+plot(agr2,main = "Dendrograma de paises de la UE")
+
+# En este ejemplo K = 2, vemos dos ramas grandes, siendo E IRL GR P en una parte, y otro conjunto el resto. EN este dendograma vemos claramente K = 2 grupos.
+
+
+
+plot(agr1,main="Dendrograma de paises de la UE")
+rect.hclust(agr1, k=2,border="red")
+
+plot(agr1,main="Dendrograma de paises de la UE")
+rect.hclust(agr1, k=4,border="red") 
+cong.pertenencia <- cutree(agr1, k = 4) # cluster de cada caso para k clusters
+cong.pertenencia
+
+```
+
+Cálculo de los centros de cada uno de los clusters
+
+```{r}
+nc <- 4
+cbind(rownames(agriculture),cong.pertenencia)
+
+centros <- NULL
+for(k in 1:nc){
+  centros <- rbind(centros, colMeans(agriculture[cong.pertenencia == k,]))
+}
+row.names(centros) <- 1:nc
+round(centros,2)
+
+```
+
+#Agrupamiento jerárquico aglomerativo "agnes" 
+ 
+agnes(datos, diss = inherits(x, "dist"), metric = "euclidean",stand = FALSE,
+        method = "average", par.method, keep.diss = n < 100, keep.data = !diss)
+
+ datos : matriz de datos o data frame, aunque también puede ser una matriz de
+          distancias o disimilaridades (debe indicarse en "diss")
+ 
+ diss  : lógica. Si TRUE (default for dist or dissimilarity objects), entonces 
+          "datos" se asume como una matriz de disimiliaridad. Si FALSE, entonces 
+          "datos" es una matriz de datos (casos en filas, variables en columnas)
+
+ metric : métrica o distancia utilizada para el cálculo de disimilaridades
+          entre observaciones o casos. Las opciones son: "euclidean" y "manhattan".
+          Si "datos" es una matriz de disimilaridades este argumento se ignora.
+          
+ stand  : lógica. Si TRUE, las medidas de "datos" se estandarizan antes de        calcular las disimilaridades. Se estandariza cada variable, restando la media y
+dividiendo por la desviación media absoluta.
+          
+          Si "datos" es una matriz de disimilaridades este argumento se ignora.
+ 
+  method : Metodo de agrupación: 
+          
+          "average" - Unión media de grupo no ponderada (UPGMA), (media de distancias   entre casos de un grupo y otro). También conocida como método de inter-grupos
+         
+         "single" - Unión simple o vecino más cercano 
+          
+          "complete" - Unión completa o vecino más lejano, 
+          
+          "ward" - Método de Ward, 
+          
+          "weighted" - Unión media ponderada (método de Mc Quitty) y
+          su generalización "flexible" que utiliza la fórmula de Lance-Williams 
+          
+          Por defecto, "average".
+
+keep.diss, keep.data : lógicas, indicando si la matriz de disimilaridades o de datos deben ser incluidos en el objeto resultante.
+ 
+ par.method : vector para el cálculo de la fórmula de Lance-Willians
+
+
+ 
+```{r}
+# La función Agnes admite matriz de distancia o la de datos, le es igual, no como hclust
+
+agnclus <- agnes(agriculture, metric = "manhattan", stand = TRUE)
+str(agnclus)
+summary(agnclus) # 1 con 10 se une con distancia 0.4088, el 2 con el 9 con 0.977 etc...
+agnclus$method
+agnclus$ac # Coeficiente de aglomeración, sirve para evaluar la clasificación que estamos haciendo. Es una medida del ajuste de esa clasificación que hemos hecho, de forma que siempre estará entre 0 y 1. A medida que el coeficiente se acerque al valor 1, mejor es la clasificación que hemos obtenido. Cuanto más cercano esté del valor cero, peor será la clasificación que hemos hecho, es decir, es una forma de medir el análisis que acabamos de realizar. ¿Cómo es nuestra clasificación? Buena, 0.8 valor bueno, 
+
+
+```
+
+
+#Representación gráfica del objeto creado
+
+plot(x, ask = FALSE, which.plots = NULL, main = NULL,
+              sub = paste("Agglomerative Coefficient = ",round(x$ac, digits = 2)),
+             , ...)
+
+   x   : objeto creado por "agnes"
+   
+  ask  : lógica. Si TRUE y  which.plots=NULL, se puede trabajar de forma interactiva
+  which.plots : Vector entero o NULL(por defecto). Si contiene al 1 se representa un                   gráfico "banner", si contiene al 2 representa un dendrograma.
+  
+  main : título principal
+  
+  sub  : subtítulo
+ 
+
+```{r}
+
+
+plot(agnclus,which.plots=c(2),main="Dendrograma de paises de la UE")
+
+par(mfrow=c(1,2))
+plot(agnclus,which.plots=c(2),main="Dendrograma de paises de la UE")
+plot(agnclus,which.plots=c(1),main="Banner de paises de la UE")
+par(mfrow=c(1,1))
+
+```
+
+
+
+#Agrupamiento jerárquico divisivo "diana" 
+
+diana(dd, diss = inherits(dd, "dist"), metric = "euclidean", stand = FALSE)
+  
+      
+  dd    : matriz de datos o matriz de disimilaridades creada por "dist" o "daisy" 
+  
+  diss  : logica. Si dd es una matriz de distancias o de disimilaridades, entonces TRUE.
+                  Si dd es una matriz de datos, entonces FALSE.
+  
+  metric :  especificación de la m?trica que se debe usar.
+           Opciones: "euclidean" (por defecto),  "manhattan". Si dd es una matriz de 
+           disimilaridades o distancias, este argumento no es necesario
+           
+ stand  :  lógica. Si TRUE, las medidas de "datos" se estandarizan antes de         calcular las disimilaridades.  
+          
+   
+
+
+```{r}
+# Los métodos divisivos se usan muy poco, en general se usan los aglomerativos, equivalente al agnes, es decir, admite matriz de datos o de distancias
+agd <-  diana(agriculture, metric = "manhattan", stand = TRUE )
+agd 
+agd$dc # Lo mismo de antes, 0 caca, 1 flama. Coeficiente divisivo 0.88, muy cercano a uno, bastante bueno
+agd$height
+cbind(agd$merge,agd$height)
+par(mfrow=c(1,2))
+plot(agd,main="Datos agricultura de paises UE")
+par(mfrow=c(1,1))
+
+
+agd <-  diana(agriculture, metric = "euclidean", stand = TRUE )
+agd
+agd$dc
+
+```
+
+
+
+
+#Ejemplo 2: Fichero "flower"
+
+
+ V1 invierno: binaria asimétrica, indica si la planta se puede dejar en el jardín en invierno
+ 
+ V2 sombra: binaria , indica si la planta necesita permanecer en la sombra.
+ 
+ V3 tubérculos: binario asimétrica, distingue entre plantas con tubérculos y plantas que crecen de otra manera.
+                
+ V4 color: nominal, color de la flor (1 = blanco, 2 = amarillo, 3 = rosa, 4 = rojo, 5 = azul).
+
+V5 suelo: ordinal, indica si la planta crece en suelo seco (1), normal (2) o húmedo (3).
+
+V6 preferencia: ordinal, rango que va de 1 a 18 sobre preferencia.
+ 
+V7 altura: altura de la planta en centímetros.
+ 
+V8 distancia: distancia en centímetros que se debe dejar entre las plantas.
+ 
+ 
+
+```{r}
+data(flower)
+head(flower)
+str(flower)
+```
+ 
+Calculamos la distancia mediante la función daisy:
+
+daisy(x, metric = c("euclidean", "manhattan", "gower"),
+      stand = FALSE, type = list(), weights = rep.int(1, p))
+
+
+```{r}
+Dflower <- daisy(flower,metric="gower", type = list(asymm = c(1,3),symm=2,ordratio=c(5,6),logratio=8))
+round(Dflower,2)
+```
+
+
+Agrupación mediante hclust (método ward)
+
+```{r}
+
+par(mfrow=c(1,2))
+
+
+acflower1 <- hclust(Dflower,method="ward.D")
+acflower1
+acflower1$height
+plot(acflower1,col="blue")
+
+acflower2 <- hclust(Dflower,method="complete")
+acflower2
+#plot(acflower2)
+```
+
+Agrupación mediante agnes (método ward)
+
+```{r}
+agflower <- agnes(Dflower, method="ward", stand = TRUE)
+summary(agflower)
+agflower$method
+agflower$ac
+plot(acflower1,col="green")
+
+par(mfrow=c(1,1))
+
+```
+
+
+

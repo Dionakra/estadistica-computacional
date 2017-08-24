@@ -1,0 +1,308 @@
+---
+title: "TEMA 7. CLASIFICACIÓN Y DISCRIMINACION.(5)"
+output: html_document
+---
+
+## ESTADÍSTICA COMPUTACIONAL
+
+**GRADO EN INGENIERÍA INFORMÁTICA-INGENIERÍA DEL SOFTWARE**
+
+**GRADO EN INGENIERÍA INFORMÁTICA- TECNOLOGÍAS INFORMÁTICAS**
+
+**Juan M. Muñoz Pichardo - María Dolores Cubiles de la Vega**
+
+**Departamento de Estadística e I.O. Universidad de Sevilla**
+
+
+___________________________________________________________________
+
+QUINTO SCRIPT DEL DESARROLLO TEÓRICO DEL TEMA
+
+RANDOM FOREST. 
+
+LIBRERÍAS : randomForest, graphics
+              
+Datos: spam.txt
+
+
+___________________________________________________________________
+
+```{r}
+library(randomForest) 
+library(graphics)
+
+```
+
+
+
+###  LECTURA DE DATOS  
+
+CONJUNTO DE DATOS: spam.txt
+
+ Variables predictoras:
+
+     crl.total  : Longitud total de las palabras en mayúsculas
+     dollar     : frecuencia del símbolo $, como % de todos los caracteres
+     bang       : idem para el símbolo !
+     money      : frecuencia de la palabra "money" como % de todas las palabras
+     n000       : frecuencia de la tira "000", % de todos los caracteres
+     make       : frecuencia de la palabra "make", como % de todas las palabras
+
+
+   Variable respuesta: 
+
+     yesno      : "n" no spam, "y" sí spam.
+
+
+```{r}
+spam <- read.table("spam.txt", header=TRUE)
+names(spam)
+summary(spam)
+str(spam) 
+
+dim(spam)
+spam[1:4,]
+```
+
+
+### Notas para clasificación a través de Random Forest 
+
+Librería "randomForest": Implementa el algoritmo "bosque aleatorio" de Breiman para clasificación y regresión. 
+
+También se puede utilizar en el modo "sin supervisión" para evaluar proximidades entre los puntos o datos
+
+  Orden básica:
+
+      randomForest(formula, data=NULL, ..., subset, na.action=na.fail)
+
+   Argumentos  :
+   
+     data      : marco de datos (opcional) que contiene las variables en el modelo. 
+                  Por defecto se toman las variables del entorno activo.
+
+     subset    : vector de índices que indican las filas que se deben utilizar. 
+     na.action : función para especificar la acción a tomar si se encuentran valores perdidos.
+     formula   : fórmula que describe el modelo que se pretende ajustar. 
+               Tambien se puede especificar indicando como primer argumento de la orden
+               el marco de datos o matriz de predictores (x) y a continuación el vector de
+               datos de la variable respuesta (y). Si es un factor se asume un modelo de 
+               clasificación, y en otro caso un modelo de regresión.
+     xtest     : marco de datos o matriz (como x) con los predictores para el conjunto test
+     ytest     : datos de la variable respuesta en el conjunto test
+     ntree     : Número de árboles que se deben realizar. No se debe establecer en un número 
+               demasiado pequeño.
+     mtry      : Número de variables seleccionadas aleatoriamente para cada división de cada árbol 
+               Por defecto, los valores son diferentes para la clasificación, sqrt(p),
+               donde p es el número de variables en x,  y para la regresión (p/3) 
+               Si se indica mtry=p entonces se está aplicando el algoritmo BAGGING
+               Si mtry<p entonces se aplica el algoritmo RANDOM FOREST
+     nodesize  : Tamaño mínimo de los nodos terminales. Tomando este número grande hace que los 
+               árboles sean más pequeños (menos nodos) y,  por tanto, se necesitará menos tiempo.
+               Los valores por defecto son para la clasificación (1) y para la regresión (5).
+     maxnodes  : Número máximo de nodos terminales que los árboles del bosque puede tener. 
+               Si no se indica, los árboles se realizan hasta el máximo posible (sujeto a los 
+               límites de nodesize). 
+     importance : ¿Se debe registrar la "importancia" de los predictores?
+     localImp   : ¿Se debe regristrar la importancia de los casos? En caso afirmativo, anula "importance"
+     norm.votes : Si TRUE (por defecto), el resultado final de los votos (o frecuencias) se expresan
+               como fracciones. Si es falso, se ofrecen frecuencias absolutas, lo que es útil 
+               para combinar los resultados de diferentes realizaciones (ignorado para regresión).
+     classwt    : Probabilidades a priori de las clases (se ignora en regresión).
+     sampsize   : Tamaño(s) de muestra. Para la clasificación, si sampsize es un vector de longitud
+                igual al número de estratos, entonces el muestreo es estratificado por "strata"
+                y los elementos de "sampsize" indican lostamaños muestrales que se deben extraer 
+                en cada uno de los estratos.
+
+  Otras opciones:
+  
+     replace    : ¿El muestreo de los casos debe ser con o sin reemplazamiento?
+     cutoff     : (Sólo Clasificación ) Un vector de longitud igual al número de clases . 
+                La clase "ganadora" para una observación es la que tiene la máxima razón de 
+                proporción de votos y mayor que cutoff. El valor predeterminado es 1/k, donde k 
+                es el número de clases (es decir, la case con "mayoría de votos").
+     strata     : Una variable (factor) que se utiliza para el muestreo estratificado.
+     nPerm      : Número de veces que los datos "OOB"(out of bag) se permutan por árbol para la evaluación de 
+                la importancia variable. Número mayor que 1 proporciona una estimación 
+                ligeramente más estable, pero no muy eficaz. Sólo implementado para la regresión .
+     proximity  : ¿deben calcularse las proximidades entre casos?
+     oob.prox   : ¿se calcula la proximidad únicamente en los datos OOB?
+     norm.votes : Si TRUE (por defecto), el resultado final de los votos (o frecuencias) se expresan
+                como fracciones. Si es falso, se ofrecen frecuencias absolutas, lo que es útil 
+                para combinar los resultados de diferentes realizaciones (ignorado para regresión).
+     keep.forest: Si FALSE, el bosque no se guardará en el objeto de salida . 
+     corr.bias  : ¿se debe realizar la corrección de sesgo de la regresión? 
+     keep.inbag : ¿Debería proporcionar una matrix (n x ntree) que realiza un seguimiento 
+                 de cuáles son los casos "in bag" (dentro de las bolsas) en los árboles 
+                (pero no el número de veces , si el muestreo es con reemplazamiento )
+
+ Existen otras opciones.
+ 
+ 
+ 
+### OBTENCIÓN DEL BOSQUE ALEATORIO
+
+```{r}
+set.seed(1)     # fija la semila con objeto de poder seleccionar la misma muestra en próximas ocasiones
+
+bag.spam = randomForest(yesno~.,data=spam , mtry=6, importance=TRUE,replace=TRUE,ntree=350, norm.votes="FALSE")
+bag.spam
+names(bag.spam)  # Información dentro del objeto creado por randomForest
+```
+
+**Extracción de la información dentro del objeto creado por randomForest**
+
+Objetivo del bosque aleatorio (Clasificación o Regresión)
+
+```{r}
+bag.spam$type  
+```
+
+
+
+
+"bag.spam$predicted" proporciona las clases asignadas según el método out-of-bag
+```{r}
+bag.spam$predicted[1:5]
+```
+
+"bag.spam$err.rate"" proporciona (sólo para clasificación) el vector de las tasas de error de la predicción en los datos de entrada, el elemento i-ésimo es la
+tasa de error OOB acumulado hasta el i-ésimo árbol generado
+
+
+```{r}
+dim(bag.spam$err.rate)
+bag.spam$err.rate[1:5,]
+```
+
+Matriz de confusión, basada en el método OOB (sólo para clasificación)
+```{r}
+bag.spam$confusion 
+```
+
+"bag.spam$votes" proporciona (sólo para clasificación) una matriz con una fila para cada caso y una columna para cada clase, incluyendo la fracción o el número de votos (OOB) del bosque aleatorio. Si norm.votes="FALSE", proporciona los totales.
+
+```{r}
+dim(bag.spam$votes)
+bag.spam$votes[1:5,]
+```
+
+
+"bag.spam$oob.times" proporciona el número de veces que los casos son 'OOB' (y por lo tanto se utiliza en el cálculo de estimación del error OOB)
+
+
+```{r}
+bag.spam$oob.times[1:5]
+```
+
+Información sobre las clases del estudio o conjunto de datos
+```{r}
+bag.spam$classes   
+```
+
+Número de árboles realizados, o número de muestras bootstrap seleccionadas:
+
+```{r}
+bag.spam$ntree
+```
+
+Número de predictores muestreados utilizados en la determinación de cada nodo de cada árbol.
+
+```{r}
+bag.spam$mtry
+```
+
+
+
+**RELEVANCIA DE LAS VARIABLES**
+
+Proporciona la medida de importancia o relevancia de cada variable, a través de una matriz con:
+
+     - Columnas: NClass+2 (para clasificación) o 2 (para regresión) 
+     - Filas   : Una fila para cada variable explicativa. 
+
+Para la clasificación, las NClass primeras columnas son las medidas específicas de cada clase calculadas como media del "decrecimiento" de la precisión respecto a las estimaciones basadas en permutaciones. 
+
+La columna (NClass + 1) es la disminución media en la precisión en todas las clases debido a la variable explicativa asociada. 
+
+La última columna es la disminución media en el índice de Gini. Para la regresión, véase el manual
+
+```{r}
+bag.spam$importance 
+bag.spam$importanceSD # Errores estandar de la medida de importancia basada en permutaciones
+```
+
+
+
+
+
+### REPRESENTACIÓN GRÁFICA 
+
+Diversos gráficos asociados al objeto randomForest creado.
+
+En primer lugar, tasas de error OOB (valores almacenados en "bag.spam$err.rate"): global y para cada clase.
+```{r}
+plot(bag.spam,type="l")
+
+```
+
+
+Información sobre las tasas de error
+```{r}
+bag.spam$err.rate[1:5,]
+bag.spam$err.rate[340:350,]
+```
+
+Gráficos de la relevancia de las variables predictoras.
+```{r}
+varImpPlot(bag.spam,main="Plot de relevancia de las variables (bag.spam)")  
+varImpPlot(bag.spam,sort="FALSE",n.var=6,col=2)
+```
+
+### Predicción para datos nuevos
+
+Orden:
+
+    predict(object, newdata, type="response",norm.votes=TRUE, predict.all=FALSE, proximity=FALSE, nodes=FALSE,cutoff, ...)
+
+Parámetros:
+
+    object     :  objeto creado por la orden "randomForest"
+    newdata    :  conjunto de datos sobre el que se quiere predecir.
+                  Si no se indica, se realiza la predicción out-of-bag (OOB)
+    type       :  Uno de las tres siguientes opciones, para indicar el resultado
+                 - response : valores pronosticados
+                 - prob.    : matriz de probabilidades de clase
+                 - vote     : matriz de voto contabilizados
+    norm.votes : ¿Se deben normalizar (expresados en fracción) el número de votos?
+    predict.all: ¿Se debe guardar la predicción de todos los árboles?
+    cutoff     : (Sólo para clasificación) Vector de longitud igual al número de clases. 
+                 La clase "ganadora" para una observación es la que tiene la máxima  
+                 proporción de votos mayor que cutoff. Por defecto, se toman los valores  
+                 proporcionados, en su caso, en la orden de creación del objeto "randmForest".
+
+
+```{r}
+nuevosdat = rbind(c(245,0.13,0.4,0.0,0.0,0.1),c(10,0.2,0.8,0.4,0.3,0.1))
+colnames(nuevosdat)=c("crl.tot", "dollar",  "bang", "money", "n000", "make")
+nuevosdat
+predict(bag.spam,nuevosdat)
+predict(bag.spam,nuevosdat,type="vote",norm.votes="F")
+predict(bag.spam,nuevosdat,type="prob")
+
+```
+
+
+
+
+     
+
+
+
+
+
+
+
+
+
+
+

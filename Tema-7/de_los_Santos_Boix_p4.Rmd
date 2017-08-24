@@ -1,0 +1,159 @@
+---
+title: "Tema 6-7. Trabajo práctico"
+author: "David de los Santos Boix"
+date: "29 de mayo de 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Primera parte (5 puntos) Fichero de datos: leche.sav
+Este fichero contiene un conjunto de mamíferos a los cuales se les analiza las características principales de la leche usando las siguientes variables: agua, proteína, grasa y lactosa
+
+#### 1.1 Lectura de datos
+```{r}
+library(haven)
+datos <- read_sav("~/EC/datos/leche.sav")
+
+# Hacemos que la columna "animal" pase a ser la "clave" del dataframe
+datos = data.frame(datos)
+rownames(datos) <- datos[,1]
+datos[,1] <- NULL
+```
+
+#### 1.2 Obtener el dendrograma mediante el comando "hclust" usando el método de enlace del vecino más lejano o unión completa y la distancia euclídea. Obtener la lista de uniones que se van produciendo con sus distancias.
+```{r}
+library(cluster)
+D = dist(datos, method="euclidean")
+agr1 <-  hclust(D, method = "complete")
+plot(agr1,main="Dendrograma")
+```
+
+```{r}
+agr1$merge
+```
+Como podemos observar, a cada iteración se van realizando aglomeraciones. En el primer paso el animal 7 se une con el 9, en el segundo el 17 con el 20, el 3 con el 5, el 10 con el 11 y el 6 se une con el primer grupo, es decir, el número positivo indica una "nueva" aglomeración, es decir, el grupo 1 se une al 7 y al 9. Y continuamos así hasta tener dos aglomeraciones en el último paso.
+
+```{r}
+agr1$height
+```
+Aquí se nos indican las distancias de estos puntos, de menor a mayor.
+
+#### 1.3 Realizar un análisis de conglomerados utilizando un método jerárquico divisivo con distancia de bloques (manhattan). Indicar el valor del coeficiente divisivo.
+```{r}
+agd <-  diana(datos, metric = "manhattan", stand = TRUE )
+agd$dc
+```
+Hemos utilizado como método jerárquico divisivo $diana$, el cual nos arroja un coeficiente divisivo de $0,9270962$. Esto indica que la aglomeración realizada es realmente buena, dado que este coeficiente varía entre 0 y 1, siendo 1 el mayor valor, un valor excelente, y 0 un valor inadmisible. En este caso con este valor podemos decir que el método ha hecho la aglomeración realmente bien.
+
+#### 1.4 Mediante el método de los medioides obtener la agrupación de los animales según las características de la leche en 4 grupos. Interpretación de los resultados.
+```{r}
+agric.pam = pam(datos,4)
+agric.pam$medoids
+```
+Como podemos observar, en los medioides los puntos centrales de aglomeración son, efectivamente, un mismo punto del aglomerado. Así, el ciervo, camello, delfín y zorro son puntos medioides de las 4 aglomeraciones realizadas.
+
+```{r}
+agric.pam$clusinfo
+```
+
+En la información del cluster vemos el tamaño de cada cluster, es decir, cuantos elementos hay en cada aglomeración. El parámetro max_diss nos informa de la distancia máxima entre los conglomerados del grupo, mientras av_diss su distancia media. Por su parte, diameter nos dice la distancia entre los puntos más separados del cluster.
+
+
+```{r}
+agric.pam$clustering
+```
+En este caso se nos ofrece la clasificación realizada, es decir, los animales en qué grupos se quedan.
+
+```{r}
+silhouette(agric.pam) 
+```
+En el análisis de la silueta podemos ver, además de a qué cluster pertenece cada animal (primera columna), cual sería el siguiente más cercano al que se acerca (segunda columna) y con qué distancia. Podemos observar que en general, los puntos están alejados, a excepción de la RATA, que se encuentra a tan solo 0.15 del grupo 4, es decir, mucho más cerca de otro grupo que el resto de los animales.
+
+### Segunda parte (3 puntos) Fichero de datos: Enzyme.dat
+Los datos corresponden a 218 pacientes con dolencias en el hígado (Plomteux, 1980). Consideramos 4 enfermedades almacenadas en la variable DIS, acute viral hepatitis (AVH), persistent chronic hepatitis (PCH), aggresive chronic hepatitis (ACH) y post-necrotic cirrhosis (PNC).
+
+Otras variables: aspartate aminotransferase (ASP), alanine aminotransferase (ALA), glutamate dehydrogenase (GLU) (todas expresadas en unidades por litro).
+
+
+#### 2.1 Lectura de datos
+```{r}
+library(graphics)
+library(MASS)
+datos <- read.table("~/EC/datos/enzyme.dat", header=TRUE)
+```
+
+#### 2.2 Realizar un análisis discriminante sobre el conjunto de datos utilizando validación cruzada.
+```{r}
+datos.ldaCV=lda(datos[,c(1,2,3)],grouping=datos[,4],CV=TRUE)
+datos.ldaCV
+```
+Aquí podemos observar la clase asignada a cada caso tras el proceso y, después, el error cometido por el cual se ha decidido que cada caso clasifique como clasifica.
+
+
+#### 2.3 Con objeto de validar la regla discriminante calculada en el apartado anterior, otener la tabla de clasificación correctos / incorrectos y el porcentaje total de clasificación.
+```{r}
+ct <- table(datos$DIS, datos.ldaCV$class)
+prob.error = diag(prop.table(ct, 1))*100
+prob.error.total = sum(diag(prop.table(ct)))*100
+
+ct
+prob.error
+prob.error.total
+```
+Como podemos observar, la clasificación no es perfecta. En el grupo DIS3_ACH falla en un 50%, aunque en el resto los valores de fallo son menores, situándose por encima del 80% de aciertos. En total y con los casos al completo la clasificación tiene una bondad del 81% de los casos, es decir, el 81% de los casos los clasificará correctamente.    
+    
+Si nos fijamos en la tabla de correctos / incorrectos, vemos que DIS1_AVH ha clasificado 55 casos como DIS1_AVH, es decir, correctos, pero 2 de ellos los ha clasificado como DIS2_PCH. Asimismo, DIS2_PCH ha clasificado 37 casos correctamente pero 5 los ha clasificado a DIS1_AVH y 2 a DIS4_PNC, equivocándose en 7 casos.
+
+
+### Tercera parte (2 puntos) Fichero de datos: Enzyme.dat
+#### 3.1 Construir un arbol de clasificación con los datos del fichero.
+```{r}
+library(rpart) 
+library(graphics)
+
+enzyme.rpart <- rpart(DIS ~ ASP + ALA + GLU, data=datos,method="class")
+
+```
+
+#### 3.2 Interpretación del árbol indicando los criterios de división en cada nodo y la interpretación del parámetro de complejidad (CP).
+```{r}
+plot(enzyme.rpart,main="CART datos spam",margin=0.01,compress=TRUE)
+text(enzyme.rpart,col="blue")
+```
+Como podemos ver en el árbol, el primerfactor discriminante es si $ALA=>5.425$, es decir, es el primer valor y parámetro que empieza a decantar las cosas. Si $ALA >= 5.425$ y $GLU < 3.2$, el arbol clasifica el caso como $IS1_AVH$. Así podemos ver que los parámetros de clasificación son: $ALA >= 5.425$, $GLU < 3.2$, $ASP < 3.7$, $ALA >= 4.445$ y finalmente $GLU < 2.675$. Con estos valores podemos definir, según el árbol, qué enfermedad padece el paciente.
+
+```{r}
+enzyme.rpart$cptable #tabla con los valores CP/nsplit/rel error/xerror/xstd
+```
+Respecto al parámetro de complejidad (CP), podemos observar que va evolucionando hasta estancarse en el sexto paso, quinta separación, en un valor de 0,01. Esto ocurre porque en los parámetros del arbol, cp está por defecto a 0,01 (ver más adelante los parámetros). En el primer paso se obtiene el índice de Gini asociado al nodo raíz. En los consiguientes se va denotando la disminución de la funcióno de impureza, es decir, el índice de Gini, después de realizar dicha separación. Por defecto, si la mejoría del índice de Gini es menor a 0,01 se entiende que ya no es necesario añadir más complejidad al árbol para ganar tan poco a nivel de pureza del árbol, por lo que paramos ahí. Existen otros parámetros de parada, pero en este caso paramos por este parámetro. A continuación los parámetros por los cuales se para:
+```{r}
+enzyme.rpart$control
+```
+
+
+#### 3.3 Evaluar el árbol, comparando los resultados con los obtenidos en el apartado 2.3
+```{r}
+#matriz de confusi?n
+confu<-table(datos$DIS,predict(enzyme.rpart,type="class"),deparse.level = 2)
+confu
+ct
+```
+Como podemos observar, la matriz de aciertos y  errores del árbol son parecidas. En algunos casos el árbol clasifica mejor, como en DIS3_ACH, y en otros ligeramente peor, como en DIS1_AVH. Es decir, ambos métodos, aún siendo diferentes en forma, nos dan resultados muy parejos entre sí.
+```{r}
+# Porcentaje correcto por grupos
+diag(prop.table(confu, 1))*100
+prob.error
+
+
+#porcentaje de acierto
+sum(diag(prop.table(confu)))*100
+prob.error.total
+
+```
+Respecto a los porcentajes de error podemos confirmar lo que comentábamos antes. DIS3_ACH es bastante mejor en la clasificación por árboles y ligeramente peor con DIS1_AVH. En términos generales el porcentaje de acierto total ambos rondan unos porcentajes parejos, 82.57% en el árbol por 81.19% con el análiss discriminante.
+
+Es decir, ambos métodos son válidos. Ambos métodos arrojan datos y confianzas similares sobre el mismo juego de datos.
+
+Por lo tanto, a un nivel "humano" que cualquier persona pudiera obtener ciertos datos y, sin necesidad de pasar por una máquina, poder clasificar un paciente, el método del árbol le es más comprensible, dado que evaluando los criterios de división de cada nodo analizados en el punto 3.2, el doctor puede, con más de un 80% de posibilidades, acertar con el diagnóstico de la enfermedad, mientras que con el análisis discriminante esto no podría hacerlo el doctor tan alegremente.
